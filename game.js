@@ -228,6 +228,22 @@ function update() {
     if (spieler2.y + spieler2.radius > HOEHE) { spieler2.y = HOEHE - spieler2.radius; } // Unten
     if (spieler2.x + spieler2.radius > BREITE) { spieler2.x = BREITE - spieler2.radius; } // Rechts
 
+    // --- NEU: Spieler-Kollision (Gegenseitiges Blockieren) ---
+    // Wir berechnen den Abstand zwischen beiden Spielern
+    let pDx = spieler2.x - spieler1.x;
+    let pDy = spieler2.y - spieler1.y;
+    let pDistanz = Math.sqrt(pDx * pDx + pDy * pDy);
+    let pMinDistanz = spieler1.radius + spieler2.radius;
+
+    // Wenn sie sich überlappen, schieben wir beide gleichmäßig auseinander
+    if (pDistanz < pMinDistanz && pDistanz > 0) {
+        let pUeberlappung = pMinDistanz - pDistanz;
+        spieler1.x -= (pDx / pDistanz) * (pUeberlappung / 2);
+        spieler1.y -= (pDy / pDistanz) * (pUeberlappung / 2);
+        spieler2.x += (pDx / pDistanz) * (pUeberlappung / 2);
+        spieler2.y += (pDy / pDistanz) * (pUeberlappung / 2);
+    }
+
     // --- NEU: BALL-PHYSIK ---
     // 1. Reibung (Ball rollt jetzt durch den Wert 0.99 deutlich länger und realistischer)
     ball.dx = ball.dx * 0.99;
@@ -237,32 +253,8 @@ function update() {
     ball.x = ball.x + ball.dx;
     ball.y = ball.y + ball.dy;
 
-    // 2. Abprallen an den Außenrändern
-    // NEU: Tor-Logik prüfen (Ist der Ball in der Höhe des Tores?)
-    // Das Tor ist 120 Pixel hoch. Von der Mitte (HOEHE/2) sind das 60 nach oben und 60 nach unten.
-    let torOben = (HOEHE / 2) - 60;
-    let torUnten = (HOEHE / 2) + 60;
-
-    // Linke Wand
-    if (ball.x - ball.radius < 0) { 
-        if (ball.y > torOben && ball.y < torUnten) {
-            torGefallen("blau"); // Tor auf der linken Seite ist ein Punkt für Blau!
-        } else {
-            ball.x = ball.radius; ball.dx = -ball.dx; 
-        }
-    }
-    // Rechte Wand
-    if (ball.x + ball.radius > BREITE) { 
-        if (ball.y > torOben && ball.y < torUnten) {
-            torGefallen("rot"); // Tor auf der rechten Seite ist ein Punkt für Rot!
-        } else {
-            ball.x = BREITE - ball.radius; ball.dx = -ball.dx; 
-        }
-    }
-    if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.dy = -ball.dy; } // Oben
-    if (ball.y + ball.radius > HOEHE) { ball.y = HOEHE - ball.radius; ball.dy = -ball.dy; } // Unten
-
-    // 3. Kreis-Kollision mit den Spielern
+    // --- 2. Kreis-Kollision mit den Spielern (JETZT VOR DEN WÄNDEN) ---
+    // Dadurch wird der Ball nicht durch Wände gedrückt, wenn ein Spieler ihn einklemmt!
     let alleSpieler = [spieler1, spieler2];
     for (let i = 0; i < alleSpieler.length; i++) {
         let spieler = alleSpieler[i];
@@ -274,7 +266,7 @@ function update() {
         
         let minAbstand = ball.radius + spieler.radius;
         
-        if (distanz < minAbstand) {
+        if (distanz < minAbstand && distanz > 0) {
             // Spieler berührt den Ball! Richtung vom Spieler zum Ball berechnen
             let richtungX = abstandX / distanz;
             let richtungY = abstandY / distanz;
@@ -290,6 +282,33 @@ function update() {
             ball.dy = richtungY * schusskraft;
         }
     }
+
+    // --- 3. Abprallen an den Außenrändern (UND TOR-LOGIK) ---
+    // Das Tor ist 120 Pixel hoch. Von der Mitte (HOEHE/2) sind das 60 nach oben und 60 nach unten.
+    let torOben = (HOEHE / 2) - 60;
+    let torUnten = (HOEHE / 2) + 60;
+
+    // Linke Wand
+    if (ball.x - ball.radius < 0) { 
+        if (ball.y > torOben && ball.y < torUnten) {
+            torGefallen("blau"); // Tor auf der linken Seite ist ein Punkt für Blau!
+            return; // WICHTIG: Update sofort abbrechen, damit der Tor-Reset intakt bleibt
+        } else {
+            ball.x = ball.radius; ball.dx = Math.abs(ball.dx); // Math.abs verhindert "Klebenbleiben" an der Wand
+        }
+    }
+    // Rechte Wand
+    if (ball.x + ball.radius > BREITE) { 
+        if (ball.y > torOben && ball.y < torUnten) {
+            torGefallen("rot"); // Tor auf der rechten Seite ist ein Punkt für Rot!
+            return; // WICHTIG: Update sofort abbrechen!
+        } else {
+            ball.x = BREITE - ball.radius; ball.dx = -Math.abs(ball.dx); 
+        }
+    }
+    // Oben und Unten
+    if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.dy = Math.abs(ball.dy); }
+    if (ball.y + ball.radius > HOEHE) { ball.y = HOEHE - ball.radius; ball.dy = -Math.abs(ball.dy); }
 }
 
 
