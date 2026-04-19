@@ -11,11 +11,13 @@ body {
     display: flex;
     /* Wir stapeln unsere Elemente (Scoreboard und Canvas) von oben nach unten */
     flex-direction: column;
-    justify-content: center;
+    /* Wir fangen oben an und lassen Platz zum Scrollen */
+    justify-content: flex-start;
     align-items: center;
     
-    /* Wir sagen, dass die Seite genau 100% der Bildschirmhöhe einnehmen soll */
-    height: 100vh;
+    /* Erlaubt der Seite zu wachsen, falls die Tabelle lang wird */
+    min-height: 100vh;
+    padding: 30px 0;
 }
 
 /* Jetzt stylen wir unser "canvas" (unsere Leinwand) */
@@ -38,6 +40,13 @@ canvas {
     align-items: center;
     gap: 20px;
     font-family: 'Segoe UI', Arial, sans-serif;
+    
+    /* NEU: Moderner Glas-Effekt für das Scoreboard */
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 15px 30px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .score-box {
@@ -58,7 +67,11 @@ canvas {
     background-color: #4da6ff;
 }
 
-#btnReset {
+.score-box.timer {
+    background-color: #222;
+}
+
+#btnStart {
     padding: 10px 25px;
     font-size: 18px;
     font-weight: bold;
@@ -69,7 +82,7 @@ canvas {
     border-radius: 5px;
     text-transform: uppercase;
 }
-#btnReset:hover {
+#btnStart:hover {
     background-color: #555;
 }
 
@@ -87,4 +100,41 @@ canvas {
 }
 .team-select:hover {
     background-color: #444;
+}
+
+/* --- NEU: Styling für die ewige Tabelle --- */
+#tabelle-container {
+    margin-top: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 20px 40px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    width: 800px;
+    text-align: center;
+}
+
+#tabelle-container h2 {
+    margin-top: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+#leaderboard {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#leaderboard th, #leaderboard td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 18px;
+}
+
+#leaderboard th {
+    background-color: rgba(0, 0, 0, 0.4);
 }

@@ -9,6 +9,12 @@ let toreRot = 0;
 let toreBlau = 0;
 const scoreRedEl = document.getElementById("scoreRed");
 const scoreBlueEl = document.getElementById("scoreBlue");
+const timerEl = document.getElementById("timerDisplay");
+
+let spielLaeuft = false;
+let spielZeit = 120; // 2 Minuten = 120 Sekunden
+let letzterFrame = Date.now();
+let spielEndeText = "";
 let torTextBis = 0; // Merkt sich, wie lange der "TOOOOR!" Text gezeigt werden soll
 
 // --- UNSERE SPIELFIGUREN ---
@@ -70,11 +76,15 @@ window.addEventListener("keyup", function(event) {
 });
 
 // --- NEU: HILFSFUNKTIONEN FÜR TORE UND RESET ---
-function resetBall() {
+function resetPositionen() {
     ball.x = BREITE / 2;
     ball.y = HOEHE / 2;
     ball.dx = 0;
     ball.dy = 0;
+    spieler1.x = 100;
+    spieler1.y = HOEHE / 2;
+    spieler2.x = BREITE - 100;
+    spieler2.y = HOEHE / 2;
 }
 
 function torGefallen(team) {
@@ -86,30 +96,109 @@ function torGefallen(team) {
         scoreBlueEl.innerText = toreBlau;
     }
     torTextBis = Date.now() + 2000; // Text für 2 Sekunden (2000 ms) einblenden
-    resetBall();
+    resetPositionen(); // Setzt nun Ball UND Spieler zurück
 }
 
-function resetSpiel() {
-    // Spielstand zurücksetzen
-    toreRot = 0;
-    toreBlau = 0;
-    scoreRedEl.innerText = toreRot;
-    scoreBlueEl.innerText = toreBlau;
+// Verbinden unseres Start-Buttons
+document.getElementById("btnStart").addEventListener("click", function() {
+    toreRot = 0; toreBlau = 0;
+    scoreRedEl.innerText = "0";
+    scoreBlueEl.innerText = "0";
+    spielZeit = 120; // Zurück auf 2:00
+    timerEl.innerText = "2:00";
+    spielEndeText = "";
+    resetPositionen();
+    letzterFrame = Date.now(); // Stoppuhr frisch starten
+    spielLaeuft = true;
+});
+
+// --- NEU: TABELLEN-LOGIK FÜR LOCALSTORAGE ---
+function spielBeenden() {
+    let teamLinks = teamLeftSelect.value;
+    let teamRechts = teamRightSelect.value;
+
+    if (toreRot > toreBlau) {
+        spielEndeText = teamLinks + " gewinnt!";
+        speichereErgebnis(teamLinks, "sieg");
+        speichereErgebnis(teamRechts, "niederlage");
+    } else if (toreBlau > toreRot) {
+        spielEndeText = teamRechts + " gewinnt!";
+        speichereErgebnis(teamRechts, "sieg");
+        speichereErgebnis(teamLinks, "niederlage");
+    } else {
+        spielEndeText = "Unentschieden!";
+        speichereErgebnis(teamLinks, "unentschieden");
+        speichereErgebnis(teamRechts, "unentschieden");
+    }
+    aktualisiereTabelle();
+}
+
+function speichereErgebnis(teamName, ergebnisTyp) {
+    // Vorhandene Daten laden oder leeres Objekt erstellen
+    let tabelle = JSON.parse(localStorage.getItem('fifaTabelle')) || {};
+    if (!tabelle[teamName]) {
+        tabelle[teamName] = { siege: 0, unentschieden: 0, niederlagen: 0 };
+    }
     
-    // Figuren zurücksetzen
-    resetBall();
-    spieler1.x = 100;
-    spieler1.y = HOEHE / 2;
-    spieler2.x = BREITE - 100;
-    spieler2.y = HOEHE / 2;
+    if (ergebnisTyp === "sieg") tabelle[teamName].siege++;
+    if (ergebnisTyp === "unentschieden") tabelle[teamName].unentschieden++;
+    if (ergebnisTyp === "niederlage") tabelle[teamName].niederlagen++;
+    
+    // Zurück in den Browser-Speicher schreiben
+    localStorage.setItem('fifaTabelle', JSON.stringify(tabelle));
 }
 
-// Verbinden unseres Buttons aus dem HTML mit unserer Reset-Funktion
-document.getElementById("btnReset").addEventListener("click", resetSpiel);
+function aktualisiereTabelle() {
+    let tabelle = JSON.parse(localStorage.getItem('fifaTabelle')) || {};
+    let body = document.getElementById("leaderboardBody");
+    body.innerHTML = "";
+
+    // In eine sortierbare Liste umwandeln (Punkte = Siege*3 + Unentschieden*1)
+    let teamsArray = [];
+    for (let team in tabelle) {
+        let punkte = (tabelle[team].siege * 3) + tabelle[team].unentschieden;
+        teamsArray.push({ name: team, stats: tabelle[team], punkte: punkte });
+    }
+    
+    // Nach Punkten absteigend sortieren
+    teamsArray.sort((a, b) => b.punkte - a.punkte);
+
+    // Ins HTML schreiben
+    for (let i = 0; i < teamsArray.length; i++) {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${i + 1}. ${teamsArray[i].name}</strong> (${teamsArray[i].punkte} Pkt)</td>
+            <td>${teamsArray[i].stats.siege}</td>
+            <td>${teamsArray[i].stats.unentschieden}</td>
+            <td>${teamsArray[i].stats.niederlagen}</td>
+        `;
+        body.appendChild(tr);
+    }
+}
+aktualisiereTabelle(); // Tabelle direkt beim Starten der Seite einmal anzeigen
 
 // --- NEU: DIE RECHEN-FUNKTION (Update) ---
 // Hier bewegen wir die Spieler, BEVOR wir sie zeichnen
 function update() {
+    // Wenn das Spiel nicht läuft, bewegen wir nichts!
+    if (!spielLaeuft) return;
+
+    // --- Timer berechnen ---
+    let jetzt = Date.now();
+    let dt = (jetzt - letzterFrame) / 1000; // Vergangene Zeit in Sekunden
+    letzterFrame = jetzt;
+
+    spielZeit = spielZeit - dt;
+    if (spielZeit <= 0) {
+        spielZeit = 0;
+        spielLaeuft = false;
+        spielBeenden();
+    }
+
+    // Timer im HTML aktualisieren (z.B. 1:05)
+    let minuten = Math.floor(spielZeit / 60);
+    let sekunden = Math.floor(spielZeit % 60);
+    timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
     // --- Spieler 1 (Rot) mit W, A, S, D ---
     // WICHTIG FÜR DEINEN SOHN: Beim Programmieren ist Y = 0 ganz OBEN am Bildschirm!
@@ -264,6 +353,28 @@ function zeichneAlles() {
         ctx.strokeStyle = "black";
         ctx.lineWidth = 4;
         ctx.strokeText("TOOOOR!", BREITE / 2, HOEHE / 2);
+    }
+
+    // Game Over / Startbildschirm
+    if (!spielLaeuft) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 0, BREITE, HOEHE);
+        
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        
+        if (spielEndeText !== "") {
+            ctx.fillStyle = "white";
+            ctx.font = "bold 60px 'Segoe UI', Arial, sans-serif";
+            ctx.fillText("SPIELENDE", BREITE / 2, HOEHE / 2 - 40);
+            ctx.fillStyle = "gold";
+            ctx.font = "bold 40px 'Segoe UI', Arial, sans-serif";
+            ctx.fillText(spielEndeText, BREITE / 2, HOEHE / 2 + 30);
+        } else {
+            ctx.fillStyle = "white";
+            ctx.font = "bold 50px 'Segoe UI', Arial, sans-serif";
+            ctx.fillText("Klicke auf 'Spiel starten'", BREITE / 2, HOEHE / 2);
+        }
     }
 }
 
