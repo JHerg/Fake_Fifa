@@ -46,6 +46,7 @@ const teamFarben = {
 
 const teamLeftSelect = document.getElementById("teamLeft");
 const teamRightSelect = document.getElementById("teamRight");
+const aiSelect = document.getElementById("aiSelect");
 
 function updateTeamFarben() {
     // Spieler-Farben aktualisieren
@@ -200,6 +201,13 @@ function update() {
     let sekunden = Math.floor(spielZeit % 60);
     timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
+    // --- NEU: KI-Geschwindigkeit vor den Sub-Steps aktualisieren ---
+    let aiMode = aiSelect.value;
+    if (aiMode === "ai1") spieler2.geschwindigkeit = 3;
+    else if (aiMode === "ai2") spieler2.geschwindigkeit = 5;
+    else if (aiMode === "ai3") spieler2.geschwindigkeit = 6;
+    else spieler2.geschwindigkeit = 5; // menschlicher Spieler
+
     // --- NEU: SUB-STEPPING (Profi-Methode gegen das Durchrutschen des Balls) ---
     // Wir unterteilen 1 Frame in 4 extrem schnelle Unter-Schritte.
     const SUBSTEPS = 4;
@@ -222,11 +230,43 @@ function update() {
         if (spieler1.y + spieler1.radius > HOEHE) { spieler1.y = HOEHE - spieler1.radius; } // Unten
         if (spieler1.x + spieler1.radius > BREITE) { spieler1.x = BREITE - spieler1.radius; } // Rechts
 
-        // --- Spieler 2 (Blau) mit den Pfeiltasten ---
-        if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - speed2; }
-        if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + speed2; }
-        if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - speed2; }
-        if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + speed2; }
+        // --- Spieler 2 (Blau) mit den Pfeiltasten ODER KI-Logik ---
+        if (aiMode === "human") {
+            if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - speed2; }
+            if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + speed2; }
+            if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - speed2; }
+            if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + speed2; }
+        } else {
+            // KI-Logik (Sub-Step genau und kollisionssicher)
+            let zielX = spieler2.x;
+            let zielY = spieler2.y;
+
+            if (aiMode === "ai1") {
+                // Stufe 1: Torwart, der nur reagiert, wenn Ball nah ist
+                zielX = BREITE - 100;
+                if (ball.x > BREITE / 2) zielY = ball.y;
+                else zielY = HOEHE / 2;
+            } else if (aiMode === "ai2") {
+                // Stufe 2: Torwart-Verhalten
+                zielX = BREITE - 100;
+                zielY = ball.y;
+            } else if (aiMode === "ai3") {
+                // Stufe 3: Aggressiver Stürmer
+                zielX = ball.x + 20; // Versucht, sich hinter/leicht rechts vom Ball zu positionieren
+                zielY = ball.y;
+            }
+
+            // KI-Richtung berechnen
+            let dx = zielX - spieler2.x;
+            let dy = zielY - spieler2.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist > 0) {
+                // Math.min verhindert sogenanntes "Zittern" (Überschießen), wenn das Ziel sehr nah ist
+                spieler2.x += (dx / dist) * Math.min(speed2, dist);
+                spieler2.y += (dy / dist) * Math.min(speed2, dist);
+            }
+        }
 
         // Grenzen für Spieler 2 prüfen
         if (spieler2.y - spieler2.radius < 0) { spieler2.y = spieler2.radius; } // Oben

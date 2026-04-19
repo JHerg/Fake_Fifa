@@ -38,6 +38,8 @@ canvas {
 #ui-container {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
     gap: 20px;
     font-family: 'Segoe UI', Arial, sans-serif;
     
