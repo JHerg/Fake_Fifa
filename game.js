@@ -200,115 +200,125 @@ function update() {
     let sekunden = Math.floor(spielZeit % 60);
     timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
-    // --- Spieler 1 (Rot) mit W, A, S, D ---
-    // WICHTIG FÜR DEINEN SOHN: Beim Programmieren ist Y = 0 ganz OBEN am Bildschirm!
-    // Wenn wir nach oben wollen, müssen wir also Minus rechnen.
-    if (tasten["w"]) { spieler1.y = spieler1.y - spieler1.geschwindigkeit; }
-    if (tasten["s"]) { spieler1.y = spieler1.y + spieler1.geschwindigkeit; }
-    if (tasten["a"]) { spieler1.x = spieler1.x - spieler1.geschwindigkeit; }
-    if (tasten["d"]) { spieler1.x = spieler1.x + spieler1.geschwindigkeit; }
-
-    // --- Grenzen für Spieler 1 prüfen ---
-    // Wenn die Position minus Radius kleiner als 0 ist, stoßen wir oben/links an.
-    if (spieler1.y - spieler1.radius < 0) { spieler1.y = spieler1.radius; } // Oben
-    if (spieler1.x - spieler1.radius < 0) { spieler1.x = spieler1.radius; } // Links
-    // Wenn die Position plus Radius größer als das Feld ist, stoßen wir unten/rechts an.
-    if (spieler1.y + spieler1.radius > HOEHE) { spieler1.y = HOEHE - spieler1.radius; } // Unten
-    if (spieler1.x + spieler1.radius > BREITE) { spieler1.x = BREITE - spieler1.radius; } // Rechts
-
-    // --- Spieler 2 (Blau) mit den Pfeiltasten ---
-    if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - spieler2.geschwindigkeit; }
-    if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + spieler2.geschwindigkeit; }
-    if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - spieler2.geschwindigkeit; }
-    if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + spieler2.geschwindigkeit; }
-
-    // --- Grenzen für Spieler 2 prüfen ---
-    if (spieler2.y - spieler2.radius < 0) { spieler2.y = spieler2.radius; } // Oben
-    if (spieler2.x - spieler2.radius < 0) { spieler2.x = spieler2.radius; } // Links
-    if (spieler2.y + spieler2.radius > HOEHE) { spieler2.y = HOEHE - spieler2.radius; } // Unten
-    if (spieler2.x + spieler2.radius > BREITE) { spieler2.x = BREITE - spieler2.radius; } // Rechts
-
-    // --- NEU: Spieler-Kollision (Gegenseitiges Blockieren) ---
-    // Wir berechnen den Abstand zwischen beiden Spielern
-    let pDx = spieler2.x - spieler1.x;
-    let pDy = spieler2.y - spieler1.y;
-    let pDistanz = Math.sqrt(pDx * pDx + pDy * pDy);
-    let pMinDistanz = spieler1.radius + spieler2.radius;
-
-    // Wenn sie sich überlappen, schieben wir beide gleichmäßig auseinander
-    if (pDistanz < pMinDistanz && pDistanz > 0) {
-        let pUeberlappung = pMinDistanz - pDistanz;
-        spieler1.x -= (pDx / pDistanz) * (pUeberlappung / 2);
-        spieler1.y -= (pDy / pDistanz) * (pUeberlappung / 2);
-        spieler2.x += (pDx / pDistanz) * (pUeberlappung / 2);
-        spieler2.y += (pDy / pDistanz) * (pUeberlappung / 2);
-    }
-
-    // --- NEU: BALL-PHYSIK ---
-    // 1. Reibung (Ball rollt jetzt durch den Wert 0.99 deutlich länger und realistischer)
-    ball.dx = ball.dx * 0.99;
-    ball.dy = ball.dy * 0.99;
-
-    // Ball anhand der Geschwindigkeit bewegen
-    ball.x = ball.x + ball.dx;
-    ball.y = ball.y + ball.dy;
-
-    // --- 2. Kreis-Kollision mit den Spielern (JETZT VOR DEN WÄNDEN) ---
-    // Dadurch wird der Ball nicht durch Wände gedrückt, wenn ein Spieler ihn einklemmt!
-    let alleSpieler = [spieler1, spieler2];
-    for (let i = 0; i < alleSpieler.length; i++) {
-        let spieler = alleSpieler[i];
+    // --- NEU: SUB-STEPPING (Profi-Methode gegen das Durchrutschen des Balls) ---
+    // Wir unterteilen 1 Frame in 4 extrem schnelle Unter-Schritte.
+    const SUBSTEPS = 4;
+    
+    for (let step = 0; step < SUBSTEPS; step++) {
         
-        // Satz des Pythagoras: a² + b² = c² (um die Distanz zwischen zwei Punkten zu messen)
-        let abstandX = ball.x - spieler.x;
-        let abstandY = ball.y - spieler.y;
-        let distanz = Math.sqrt(abstandX * abstandX + abstandY * abstandY);
-        
-        let minAbstand = ball.radius + spieler.radius;
-        
-        if (distanz < minAbstand && distanz > 0) {
-            // Spieler berührt den Ball! Richtung vom Spieler zum Ball berechnen
-            let richtungX = abstandX / distanz;
-            let richtungY = abstandY / distanz;
+        // Geschwindigkeit für diesen winzigen Teilschritt anpassen
+        let speed1 = spieler1.geschwindigkeit / SUBSTEPS;
+        let speed2 = spieler2.geschwindigkeit / SUBSTEPS;
+
+        // --- Spieler 1 (Rot) mit W, A, S, D ---
+        if (tasten["w"]) { spieler1.y = spieler1.y - speed1; }
+        if (tasten["s"]) { spieler1.y = spieler1.y + speed1; }
+        if (tasten["a"]) { spieler1.x = spieler1.x - speed1; }
+        if (tasten["d"]) { spieler1.x = spieler1.x + speed1; }
+
+        // Grenzen für Spieler 1 prüfen
+        if (spieler1.y - spieler1.radius < 0) { spieler1.y = spieler1.radius; } // Oben
+        if (spieler1.x - spieler1.radius < 0) { spieler1.x = spieler1.radius; } // Links
+        if (spieler1.y + spieler1.radius > HOEHE) { spieler1.y = HOEHE - spieler1.radius; } // Unten
+        if (spieler1.x + spieler1.radius > BREITE) { spieler1.x = BREITE - spieler1.radius; } // Rechts
+
+        // --- Spieler 2 (Blau) mit den Pfeiltasten ---
+        if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - speed2; }
+        if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + speed2; }
+        if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - speed2; }
+        if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + speed2; }
+
+        // Grenzen für Spieler 2 prüfen
+        if (spieler2.y - spieler2.radius < 0) { spieler2.y = spieler2.radius; } // Oben
+        if (spieler2.x - spieler2.radius < 0) { spieler2.x = spieler2.radius; } // Links
+        if (spieler2.y + spieler2.radius > HOEHE) { spieler2.y = HOEHE - spieler2.radius; } // Unten
+        if (spieler2.x + spieler2.radius > BREITE) { spieler2.x = BREITE - spieler2.radius; } // Rechts
+
+        // --- Spieler-Kollision (Gegenseitiges Blockieren) ---
+        let pDx = spieler2.x - spieler1.x;
+        let pDy = spieler2.y - spieler1.y;
+        let pDistanz = Math.sqrt(pDx * pDx + pDy * pDy);
+        let pMinDistanz = spieler1.radius + spieler2.radius;
+
+        if (pDistanz < pMinDistanz && pDistanz > 0) {
+            let pUeberlappung = pMinDistanz - pDistanz;
+            spieler1.x -= (pDx / pDistanz) * (pUeberlappung / 2);
+            spieler1.y -= (pDy / pDistanz) * (pUeberlappung / 2);
+            spieler2.x += (pDx / pDistanz) * (pUeberlappung / 2);
+            spieler2.y += (pDy / pDistanz) * (pUeberlappung / 2);
+        }
+
+        // --- BALL-PHYSIK ---
+        // Reibung (angepasst an die Sub-Steps, entspricht grob 0.99 pro Frame)
+        ball.dx = ball.dx * Math.pow(0.99, 1/SUBSTEPS);
+        ball.dy = ball.dy * Math.pow(0.99, 1/SUBSTEPS);
+
+        // Maximale Ball-Geschwindigkeit begrenzen (kleiner als Spieler-Durchmesser)
+        let maxBallSpeed = (spieler1.radius * 2) - 2; 
+        let currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+        if (currentSpeed > maxBallSpeed) {
+            ball.dx = (ball.dx / currentSpeed) * maxBallSpeed;
+            ball.dy = (ball.dy / currentSpeed) * maxBallSpeed;
+        }
+
+        // Ball bewegen (anteilig für diesen Sub-Step)
+        ball.x += ball.dx / SUBSTEPS;
+        ball.y += ball.dy / SUBSTEPS;
+
+        // --- Kreis-Kollision mit den Spielern ---
+        let alleSpieler = [spieler1, spieler2];
+        for (let i = 0; i < alleSpieler.length; i++) {
+            let spieler = alleSpieler[i];
             
-            // Ball aus dem Spieler herausschieben, damit er nicht "stecken bleibt"
-            let ueberlappung = minAbstand - distanz;
-            ball.x = ball.x + (richtungX * ueberlappung);
-            ball.y = ball.y + (richtungY * ueberlappung);
+            let abstandX = ball.x - spieler.x;
+            let abstandY = ball.y - spieler.y;
+            let distanz = Math.sqrt(abstandX * abstandX + abstandY * abstandY);
             
-            // Impuls übertragen (Ball wegstoßen)
-            let schusskraft = 8;
-            ball.dx = richtungX * schusskraft;
-            ball.dy = richtungY * schusskraft;
+            let minAbstand = ball.radius + spieler.radius;
+            
+            if (distanz < minAbstand && distanz > 0) {
+                let richtungX = abstandX / distanz;
+                let richtungY = abstandY / distanz;
+                
+                // Verstärkte Positions-Korrektur (Ball zwingend an die Außenkante setzen)
+                let ueberlappung = minAbstand - distanz;
+                ball.x += richtungX * ueberlappung;
+                ball.y += richtungY * ueberlappung;
+                
+                // Spieler-Push-Back: Ball addiert Geschwindigkeit, um vor dem Spieler herzubewegen
+                // Anstatt ihn sofort über die Map zu schießen, pusht der Spieler den Ball beständig.
+                let pushKraft = 20; 
+                ball.dx += richtungX * (pushKraft / SUBSTEPS);
+                ball.dy += richtungY * (pushKraft / SUBSTEPS);
+            }
         }
-    }
 
-    // --- 3. Abprallen an den Außenrändern (UND TOR-LOGIK) ---
-    // Das Tor ist 120 Pixel hoch. Von der Mitte (HOEHE/2) sind das 60 nach oben und 60 nach unten.
-    let torOben = (HOEHE / 2) - 60;
-    let torUnten = (HOEHE / 2) + 60;
+        // --- Abprallen an den Außenrändern (UND TOR-LOGIK) ---
+        let torOben = (HOEHE / 2) - 60;
+        let torUnten = (HOEHE / 2) + 60;
 
-    // Linke Wand
-    if (ball.x - ball.radius < 0) { 
-        if (ball.y > torOben && ball.y < torUnten) {
-            torGefallen("blau"); // Tor auf der linken Seite ist ein Punkt für Blau!
-            return; // WICHTIG: Update sofort abbrechen, damit der Tor-Reset intakt bleibt
-        } else {
-            ball.x = ball.radius; ball.dx = Math.abs(ball.dx); // Math.abs verhindert "Klebenbleiben" an der Wand
+        // Linke Wand
+        if (ball.x - ball.radius < 0) { 
+            if (ball.y > torOben && ball.y < torUnten) {
+                torGefallen("blau"); 
+                return; // WICHTIG: Sub-Stepping sofort abbrechen!
+            } else {
+                ball.x = ball.radius; ball.dx = Math.abs(ball.dx);
+            }
         }
-    }
-    // Rechte Wand
-    if (ball.x + ball.radius > BREITE) { 
-        if (ball.y > torOben && ball.y < torUnten) {
-            torGefallen("rot"); // Tor auf der rechten Seite ist ein Punkt für Rot!
-            return; // WICHTIG: Update sofort abbrechen!
-        } else {
-            ball.x = BREITE - ball.radius; ball.dx = -Math.abs(ball.dx); 
+        // Rechte Wand
+        if (ball.x + ball.radius > BREITE) { 
+            if (ball.y > torOben && ball.y < torUnten) {
+                torGefallen("rot"); 
+                return; // WICHTIG: Sub-Stepping sofort abbrechen!
+            } else {
+                ball.x = BREITE - ball.radius; ball.dx = -Math.abs(ball.dx); 
+            }
         }
+        // Oben und Unten
+        if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.dy = Math.abs(ball.dy); }
+        if (ball.y + ball.radius > HOEHE) { ball.y = HOEHE - ball.radius; ball.dy = -Math.abs(ball.dy); }
     }
-    // Oben und Unten
-    if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.dy = Math.abs(ball.dy); }
-    if (ball.y + ball.radius > HOEHE) { ball.y = HOEHE - ball.radius; ball.dy = -Math.abs(ball.dy); }
 }
 
 
