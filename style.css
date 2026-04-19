@@ -32,6 +32,8 @@ canvas {
     box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.8);
     /* Ein wenig Abstand nach oben zum Scoreboard */
     margin-top: 20px;
+    /* NEU: Verhindert, dass das Canvas auf Touch-Geräten gescrollt oder gezoomt wird */
+    touch-action: none;
 }
 
 /* --- NEU: Styling für Scoreboard und Button --- */
@@ -139,4 +141,42 @@ canvas {
 
 #leaderboard th {
     background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* --- NEU: MOBIL-OPTIMIERUNG FÜR HANDYS & TABLETS --- */
+@media (max-width: 800px) {
+    #ui-container {
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    /* Scoreboard etwas kompakter machen */
+    .score-box {
+        font-size: 24px;
+        padding: 8px 15px;
+    }
+    
+    /* Größere Klickfläche für Daumen */
+    #btnStart {
+        font-size: 20px;
+        padding: 15px 30px;
+    }
+    
+    .team-select {
+        font-size: 16px;
+        padding: 12px;
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    /* Tabelle responsiv machen */
+    #tabelle-container {
+        width: 95%;
+        padding: 10px;
+    }
+    
+    #leaderboard th, #leaderboard td {
+        font-size: 14px;
+        padding: 8px;
+    }
 }

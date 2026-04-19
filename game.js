@@ -4,6 +4,30 @@ const ctx = canvas.getContext("2d");
 const BREITE = canvas.width;
 const HOEHE = canvas.height;
 
+// --- NEU: RESPONSIVES CANVAS FÜR MOBILE GERÄTE ---
+function passeCanvasAn() {
+    let fensterBreite = window.innerWidth;
+    let fensterHoehe = window.innerHeight;
+    
+    // Wir lassen Platz für das UI (Scoreboard) oben/unten
+    let verfuegbareHoehe = fensterHoehe - 180;
+    let seitenVerhaeltnis = BREITE / HOEHE; // 1000 / 600 = 1.666...
+    
+    let neueBreite = fensterBreite * 0.95; // Maximal 95% vom Bildschirm nutzen
+    let neueHoehe = neueBreite / seitenVerhaeltnis;
+    
+    // Wenn es so zu hoch ist, orientieren wir uns stattdessen an der Höhe
+    if (neueHoehe > verfuegbareHoehe) {
+        neueHoehe = verfuegbareHoehe;
+        neueBreite = neueHoehe * seitenVerhaeltnis;
+    }
+    
+    canvas.style.width = neueBreite + "px";
+    canvas.style.height = neueHoehe + "px";
+}
+window.addEventListener("resize", passeCanvasAn);
+passeCanvasAn(); // Einmal direkt beim Start aufrufen
+
 // --- NEU: PUNKTESTAND ---
 let toreRot = 0;
 let toreBlau = 0;
@@ -110,6 +134,21 @@ canvas.addEventListener("mousemove", function(event) {
     mouseY = (event.clientY - rect.top) * (canvas.height / rect.height);
     mouseActive = true; // Aktiviert die Maussteuerung automatisch, wenn die Maus bewegt wird
 });
+
+// --- NEU: TOUCH-STEUERUNG FÜR HANDYS & TABLETS ---
+function handleTouch(event) {
+    event.preventDefault(); // Verhindert, dass der Browser beim Wischen scrollt
+    let rect = canvas.getBoundingClientRect();
+    let touch = event.touches[0];
+    
+    // Berechne exakte interne Koordinaten (Skalierung ausgleichen)
+    mouseX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    // Leicht versetzt über dem Finger (-40), damit der Daumen die Figur nicht verdeckt!
+    mouseY = ((touch.clientY - rect.top) * (canvas.height / rect.height)) - 40;
+    mouseActive = true;
+}
+canvas.addEventListener("touchstart", handleTouch, { passive: false });
+canvas.addEventListener("touchmove", handleTouch, { passive: false });
 
 // --- NEU: HILFSFUNKTIONEN FÜR TORE UND RESET ---
 function resetPositionen() {
