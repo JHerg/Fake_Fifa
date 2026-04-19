@@ -48,6 +48,25 @@ const teamLeftSelect = document.getElementById("teamLeft");
 const teamRightSelect = document.getElementById("teamRight");
 const aiSelect = document.getElementById("aiSelect");
 
+// --- NEU: KI-VARIABLEN ---
+let currentAiMode = "human";
+let aiTargetX = BREITE - 100;
+let aiTargetY = HOEHE / 2;
+let aiUpdateCounter = 0;
+let aiLastX = BREITE - 100;
+let aiLastY = HOEHE / 2;
+let aiStuckFrames = 0;
+
+function setzeSpielModus() {
+    currentAiMode = aiSelect.value;
+    if (currentAiMode === "ai1") spieler2.geschwindigkeit = 3;
+    else if (currentAiMode === "ai2") spieler2.geschwindigkeit = 5;
+    else if (currentAiMode === "ai3") spieler2.geschwindigkeit = 6;
+    else spieler2.geschwindigkeit = 5; // menschlicher Spieler
+}
+aiSelect.addEventListener("change", setzeSpielModus);
+setzeSpielModus(); // Einmal beim Starten aufrufen
+
 function updateTeamFarben() {
     // Spieler-Farben aktualisieren
     spieler1.farbe = teamFarben[teamLeftSelect.value];
@@ -109,6 +128,10 @@ document.getElementById("btnStart").addEventListener("click", function() {
     timerEl.innerText = "2:00";
     spielEndeText = "";
     resetPositionen();
+    setzeSpielModus(); // KI-Modus fixieren
+    aiLastX = spieler2.x;
+    aiLastY = spieler2.y;
+    aiStuckFrames = 0;
     letzterFrame = Date.now(); // Stoppuhr frisch starten
     spielLaeuft = true;
 });
@@ -201,12 +224,46 @@ function update() {
     let sekunden = Math.floor(spielZeit % 60);
     timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
-    // --- NEU: KI-Geschwindigkeit vor den Sub-Steps aktualisieren ---
-    let aiMode = aiSelect.value;
-    if (aiMode === "ai1") spieler2.geschwindigkeit = 3;
-    else if (aiMode === "ai2") spieler2.geschwindigkeit = 5;
-    else if (aiMode === "ai3") spieler2.geschwindigkeit = 6;
-    else spieler2.geschwindigkeit = 5; // menschlicher Spieler
+    // --- NEU: KI-Entscheidungs-Zyklus (nur alle 10 Frames) ---
+    if (currentAiMode !== "human") {
+        aiUpdateCounter++;
+        if (aiUpdateCounter >= 10) {
+            aiUpdateCounter = 0;
+            
+            // 1. Befreiungs-Logik: Hängt die KI fest?
+            let distMoved = Math.hypot(spieler2.x - aiLastX, spieler2.y - aiLastY);
+            if (distMoved < 5) {
+                aiStuckFrames += 10; // 10 Frames sind vergangen
+            } else {
+                aiStuckFrames = 0;
+            }
+            aiLastX = spieler2.x;
+            aiLastY = spieler2.y;
+
+            if (aiStuckFrames >= 60) { // Nach ~1 Sekunde (60 Frames) befreien
+                aiTargetX = BREITE / 2;
+                aiTargetY = HOEHE / 2;
+                if (aiStuckFrames >= 90) aiStuckFrames = 0; // Nach kurzem Weglaufen wieder normal spielen
+            } else {
+                // 2. Normale KI-Ziele setzen
+                if (currentAiMode === "ai1") {
+                    aiTargetX = BREITE - 100;
+                    aiTargetY = (ball.x > BREITE / 2) ? ball.y : HOEHE / 2;
+                } else if (currentAiMode === "ai2") {
+                    aiTargetX = BREITE - 100;
+                    aiTargetY = ball.y;
+                } else if (currentAiMode === "ai3") {
+                    aiTargetX = ball.x + 20; 
+                    aiTargetY = ball.y;
+                }
+
+                // 3. Anti-Ecken-Logik: Mindestabstand zur Wand einhalten!
+                let minWand = spieler2.radius + 15;
+                aiTargetX = Math.max(minWand, Math.min(BREITE - minWand, aiTargetX));
+                aiTargetY = Math.max(minWand, Math.min(HOEHE - minWand, aiTargetY));
+            }
+        }
+    }
 
     // --- NEU: SUB-STEPPING (Profi-Methode gegen das Durchrutschen des Balls) ---
     // Wir unterteilen 1 Frame in 4 extrem schnelle Unter-Schritte.
@@ -231,38 +288,19 @@ function update() {
         if (spieler1.x + spieler1.radius > BREITE) { spieler1.x = BREITE - spieler1.radius; } // Rechts
 
         // --- Spieler 2 (Blau) mit den Pfeiltasten ODER KI-Logik ---
-        if (aiMode === "human") {
+        if (currentAiMode === "human") {
             if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - speed2; }
             if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + speed2; }
             if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - speed2; }
             if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + speed2; }
         } else {
-            // KI-Logik (Sub-Step genau und kollisionssicher)
-            let zielX = spieler2.x;
-            let zielY = spieler2.y;
-
-            if (aiMode === "ai1") {
-                // Stufe 1: Torwart, der nur reagiert, wenn Ball nah ist
-                zielX = BREITE - 100;
-                if (ball.x > BREITE / 2) zielY = ball.y;
-                else zielY = HOEHE / 2;
-            } else if (aiMode === "ai2") {
-                // Stufe 2: Torwart-Verhalten
-                zielX = BREITE - 100;
-                zielY = ball.y;
-            } else if (aiMode === "ai3") {
-                // Stufe 3: Aggressiver Stürmer
-                zielX = ball.x + 20; // Versucht, sich hinter/leicht rechts vom Ball zu positionieren
-                zielY = ball.y;
-            }
-
-            // KI-Richtung berechnen
-            let dx = zielX - spieler2.x;
-            let dy = zielY - spieler2.y;
+            // KI-Bewegung hin zum berechneten Target
+            let dx = aiTargetX - spieler2.x;
+            let dy = aiTargetY - spieler2.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
             
             if (dist > 0) {
-                // Math.min verhindert sogenanntes "Zittern" (Überschießen), wenn das Ziel sehr nah ist
+                // Math.min verhindert "Zittern" am Zielpunkt
                 spieler2.x += (dx / dist) * Math.min(speed2, dist);
                 spieler2.y += (dy / dist) * Math.min(speed2, dist);
             }
