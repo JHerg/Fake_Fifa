@@ -61,7 +61,7 @@ function setzeSpielModus() {
     currentAiMode = aiSelect.value;
     if (currentAiMode === "ai1") spieler2.geschwindigkeit = 3;
     else if (currentAiMode === "ai2") spieler2.geschwindigkeit = 5;
-    else if (currentAiMode === "ai3") spieler2.geschwindigkeit = 6;
+    else if (currentAiMode === "ai3") spieler2.geschwindigkeit = 8; // KI Stufe 3 leicht erhöht als Ausgleich
     else spieler2.geschwindigkeit = 5; // menschlicher Spieler
 }
 aiSelect.addEventListener("change", setzeSpielModus);
@@ -315,13 +315,15 @@ function update() {
         // --- Spieler 1 (Rot) mit Maus oder W, A, S, D ---
         if (!isKickoffPause) {
             if (mouseActive && mouseX !== null && mouseY !== null) {
-                let dx = mouseX - spieler1.x;
-                let dy = mouseY - spieler1.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 0) {
-                    spieler1.x += (dx / dist) * Math.min(speed1, dist);
-                    spieler1.y += (dy / dist) * Math.min(speed1, dist);
-                }
+                // Direkte Positionszuweisung, exakt zentriert auf die Spitze des Mauszeigers.
+                // Begrenzt auf das Spielfeld, damit er nicht in oder durch Wände teleportiert.
+                let zielX = Math.max(spieler1.radius, Math.min(BREITE - spieler1.radius, mouseX));
+                let zielY = Math.max(spieler1.radius, Math.min(HOEHE - spieler1.radius, mouseY));
+                
+                // Aufteilen der Distanz auf die Sub-Steps, um physikalisches "Tunneling" zu verhindern
+                let schritteUebrig = SUBSTEPS - step;
+                spieler1.x += (zielX - spieler1.x) / schritteUebrig;
+                spieler1.y += (zielY - spieler1.y) / schritteUebrig;
             } else {
                 if (tasten["w"]) { spieler1.y = spieler1.y - speed1; }
                 if (tasten["s"]) { spieler1.y = spieler1.y - speed1; } // Fix für S (sollte addieren):
