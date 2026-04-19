@@ -84,15 +84,31 @@ updateTeamFarben(); // Einmal am Anfang aufrufen, um die Standardwerte (Bayern v
 // --- NEU: DIE STEUERUNG (Welche Taste wird gerade gedrückt?) ---
 // Wir erstellen ein "Wörterbuch" (Objekt), das sich merkt, ob eine Taste gedrückt ist.
 const tasten = {};
+let mouseX = null;
+let mouseY = null;
+let mouseActive = false;
+let ballHistory = [];
 
 // Wenn eine Taste HERUNTERGEDRÜCKT wird, merken wir uns: "Wahr" (true)
 window.addEventListener("keydown", function(event) {
     tasten[event.key] = true;
+    // Bei WASD-Eingabe sofort die Maussteuerung deaktivieren
+    if (["w", "a", "s", "d", "W", "A", "S", "D"].includes(event.key)) {
+        mouseActive = false;
+    }
 });
 
 // Wenn eine Taste LOSGELASSEN wird, merken wir uns: "Falsch" (false)
 window.addEventListener("keyup", function(event) {
     tasten[event.key] = false;
+});
+
+// Mausbewegung tracken
+canvas.addEventListener("mousemove", function(event) {
+    let rect = canvas.getBoundingClientRect();
+    mouseX = (event.clientX - rect.left) * (canvas.width / rect.width);
+    mouseY = (event.clientY - rect.top) * (canvas.height / rect.height);
+    mouseActive = true; // Aktiviert die Maussteuerung automatisch, wenn die Maus bewegt wird
 });
 
 // --- NEU: HILFSFUNKTIONEN FÜR TORE UND RESET ---
@@ -105,6 +121,8 @@ function resetPositionen() {
     spieler1.y = HOEHE / 2;
     spieler2.x = BREITE - 100;
     spieler2.y = HOEHE / 2;
+    mouseActive = false; // Zurücksetzen, damit Spieler 1 nicht sofort zum alten Mauspunkt rennt
+    ballHistory = []; // KI-Verzögerung zurücksetzen
 }
 
 function torGefallen(team) {
@@ -224,6 +242,13 @@ function update() {
     let sekunden = Math.floor(spielZeit % 60);
     timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
+    // --- NEU: BALL-HISTORIE FÜR KI STUFE 3 (0.1s DELAY) ---
+    ballHistory.push({ x: ball.x, y: ball.y });
+    if (ballHistory.length > 6) { // 6 Frames entsprechen bei 60fps ca. 100ms
+        ballHistory.shift();
+    }
+    let delayedBall = ballHistory[0] || ball;
+
     // --- NEU: KI-Entscheidungs-Zyklus (nur alle 10 Frames) ---
     if (currentAiMode !== "human") {
         aiUpdateCounter++;
@@ -250,11 +275,19 @@ function update() {
                     aiTargetX = BREITE - 100;
                     aiTargetY = (ball.x > BREITE / 2) ? ball.y : HOEHE / 2;
                 } else if (currentAiMode === "ai2") {
-                    aiTargetX = BREITE - 100;
-                    aiTargetY = ball.y;
+                    if (ball.x > BREITE / 2) {
+                        // Ball in der eigenen (rechten) Hälfte -> aktiv angreifen!
+                        aiTargetX = ball.x;
+                        aiTargetY = ball.y;
+                    } else {
+                        // Ball in gegnerischer Hälfte -> bis zur Mittellinie aufrücken
+                        aiTargetX = (BREITE / 2) + 100;
+                        aiTargetY = ball.y;
+                    }
                 } else if (currentAiMode === "ai3") {
-                    aiTargetX = ball.x + 20; 
-                    aiTargetY = ball.y;
+                    // Nutzt die delayedBall-Position für leicht verzögerte Reaktion
+                    aiTargetX = delayedBall.x + 20; 
+                    aiTargetY = delayedBall.y;
                 }
 
                 // 3. Anti-Ecken-Logik: Mindestabstand zur Wand einhalten!
@@ -275,11 +308,28 @@ function update() {
         let speed1 = spieler1.geschwindigkeit / SUBSTEPS;
         let speed2 = spieler2.geschwindigkeit / SUBSTEPS;
 
-        // --- Spieler 1 (Rot) mit W, A, S, D ---
-        if (tasten["w"]) { spieler1.y = spieler1.y - speed1; }
-        if (tasten["s"]) { spieler1.y = spieler1.y + speed1; }
-        if (tasten["a"]) { spieler1.x = spieler1.x - speed1; }
-        if (tasten["d"]) { spieler1.x = spieler1.x + speed1; }
+        // --- Tor-Reset-Pause (Kickoff Delay) ---
+        // Spieler dürfen sich erst bewegen, wenn der "TOOOOR!"-Text verschwunden ist.
+        let isKickoffPause = Date.now() < torTextBis;
+
+        // --- Spieler 1 (Rot) mit Maus oder W, A, S, D ---
+        if (!isKickoffPause) {
+            if (mouseActive && mouseX !== null && mouseY !== null) {
+                let dx = mouseX - spieler1.x;
+                let dy = mouseY - spieler1.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 0) {
+                    spieler1.x += (dx / dist) * Math.min(speed1, dist);
+                    spieler1.y += (dy / dist) * Math.min(speed1, dist);
+                }
+            } else {
+                if (tasten["w"]) { spieler1.y = spieler1.y - speed1; }
+                if (tasten["s"]) { spieler1.y = spieler1.y - speed1; } // Fix für S (sollte addieren):
+                if (tasten["s"]) { spieler1.y = spieler1.y + speed1; } // Korrigiert!
+                if (tasten["a"]) { spieler1.x = spieler1.x - speed1; }
+                if (tasten["d"]) { spieler1.x = spieler1.x + speed1; }
+            }
+        }
 
         // Grenzen für Spieler 1 prüfen
         if (spieler1.y - spieler1.radius < 0) { spieler1.y = spieler1.radius; } // Oben
@@ -288,21 +338,23 @@ function update() {
         if (spieler1.x + spieler1.radius > BREITE) { spieler1.x = BREITE - spieler1.radius; } // Rechts
 
         // --- Spieler 2 (Blau) mit den Pfeiltasten ODER KI-Logik ---
-        if (currentAiMode === "human") {
-            if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - speed2; }
-            if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + speed2; }
-            if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - speed2; }
-            if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + speed2; }
-        } else {
-            // KI-Bewegung hin zum berechneten Target
-            let dx = aiTargetX - spieler2.x;
-            let dy = aiTargetY - spieler2.y;
-            let dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist > 0) {
-                // Math.min verhindert "Zittern" am Zielpunkt
-                spieler2.x += (dx / dist) * Math.min(speed2, dist);
-                spieler2.y += (dy / dist) * Math.min(speed2, dist);
+        if (!isKickoffPause) {
+            if (currentAiMode === "human") {
+                if (tasten["ArrowUp"]) { spieler2.y = spieler2.y - speed2; }
+                if (tasten["ArrowDown"]) { spieler2.y = spieler2.y + speed2; }
+                if (tasten["ArrowLeft"]) { spieler2.x = spieler2.x - speed2; }
+                if (tasten["ArrowRight"]) { spieler2.x = spieler2.x + speed2; }
+            } else {
+                // KI-Bewegung hin zum berechneten Target
+                let dx = aiTargetX - spieler2.x;
+                let dy = aiTargetY - spieler2.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    // Math.min verhindert "Zittern" am Zielpunkt
+                    spieler2.x += (dx / dist) * Math.min(speed2, dist);
+                    spieler2.y += (dy / dist) * Math.min(speed2, dist);
+                }
             }
         }
 
