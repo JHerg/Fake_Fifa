@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake FIFA - Funino Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- NEU: Unser UI-Container für Spielstand und Reset-Button -->
+    <div id="ui-container">
+        <div class="score-box red" id="scoreRed">0</div>
+        <button id="btnReset">Reset</button>
+        <div class="score-box blue" id="scoreBlue">0</div>
+    </div>
+
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <script src="game.js"></script>
+</body>
+</html>

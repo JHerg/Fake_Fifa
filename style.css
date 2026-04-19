@@ -1,0 +1,74 @@
+/* Wir sagen dem "body" (also der ganzen Webseite), wie er aussehen soll */
+body {
+    /* Wir machen den Hintergrund dunkelgrau, fast schwarz */
+    background-color: #1a1a1a;
+    
+    /* Wir entfernen unsichtbare Ränder, die der Browser oft automatisch macht */
+    margin: 0;
+    
+    /* Diese drei Zeilen sind ein Zaubertrick ("Flexbox"), 
+       um unser Spielfeld exakt in die Mitte zu schieben! */
+    display: flex;
+    /* Wir stapeln unsere Elemente (Scoreboard und Canvas) von oben nach unten */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    /* Wir sagen, dass die Seite genau 100% der Bildschirmhöhe einnehmen soll */
+    height: 100vh;
+}
+
+/* Jetzt stylen wir unser "canvas" (unsere Leinwand) */
+canvas {
+    /* Wir machen die Leinwand weiß, damit wir gleich gut sehen können, wo das Spielfeld ist */
+    background-color: white;
+    
+    /* Wir runden die Ecken ein bisschen ab (10 Pixel) - sieht moderner aus */
+    border-radius: 10px;
+    
+    /* Wir malen einen coolen schwarzen Schatten um das Spielfeld */
+    box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.8);
+    /* Ein wenig Abstand nach oben zum Scoreboard */
+    margin-top: 20px;
+}
+
+/* --- NEU: Styling für Scoreboard und Button --- */
+#ui-container {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.score-box {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    padding: 10px 30px;
+    border-radius: 8px;
+    /* Ein kleiner Innenschatten lässt das sportlicher aussehen */
+    box-shadow: inset 0px 0px 10px rgba(0,0,0,0.5);
+}
+
+.score-box.red {
+    background-color: #ff4d4d;
+}
+
+.score-box.blue {
+    background-color: #4da6ff;
+}
+
+#btnReset {
+    padding: 10px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #333;
+    color: white;
+    border: 2px solid white;
+    border-radius: 5px;
+    text-transform: uppercase;
+}
+#btnReset:hover {
+    background-color: #555;
+}
