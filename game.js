@@ -9,6 +9,7 @@ let toreRot = 0;
 let toreBlau = 0;
 const scoreRedEl = document.getElementById("scoreRed");
 const scoreBlueEl = document.getElementById("scoreBlue");
+let torTextBis = 0; // Merkt sich, wie lange der "TOOOOR!" Text gezeigt werden soll
 
 // --- UNSERE SPIELFIGUREN ---
 let ball = { x: BREITE / 2, y: HOEHE / 2, radius: 10, farbe: "white", dx: 0, dy: 0 };
@@ -45,6 +46,7 @@ function torGefallen(team) {
         toreBlau++;
         scoreBlueEl.innerText = toreBlau;
     }
+    torTextBis = Date.now() + 2000; // Text für 2 Sekunden (2000 ms) einblenden
     resetBall();
 }
 
@@ -168,6 +170,12 @@ function zeichneAlles() {
     // Rasen
     ctx.fillStyle = "#2e8b57";
     ctx.fillRect(0, 0, BREITE, HOEHE);
+    
+    // Rasen-Streifen (Stadion-Look)
+    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; // Ein leichtes Schwarz für die dunkleren Streifen
+    for (let i = 0; i < BREITE; i += 100) {
+        ctx.fillRect(i, 0, 50, HOEHE); // Malt alle 100 Pixel einen 50 Pixel breiten Streifen
+    }
 
     // Linien
     ctx.strokeStyle = "white";
@@ -184,6 +192,15 @@ function zeichneAlles() {
     ctx.fillRect(0, HOEHE / 2 - 60, 10, 120); 
     ctx.fillRect(BREITE - 10, HOEHE / 2 - 60, 10, 120);
 
+    // Schatten (Ball & Spieler)
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)"; // Halbtransparentes, dunkles Grau
+    // Ball Schatten
+    ctx.beginPath(); ctx.arc(ball.x + 4, ball.y + 4, ball.radius, 0, Math.PI * 2); ctx.fill();
+    // Spieler 1 Schatten
+    ctx.beginPath(); ctx.arc(spieler1.x + 4, spieler1.y + 4, spieler1.radius, 0, Math.PI * 2); ctx.fill();
+    // Spieler 2 Schatten
+    ctx.beginPath(); ctx.arc(spieler2.x + 4, spieler2.y + 4, spieler2.radius, 0, Math.PI * 2); ctx.fill();
+
     // Ball
     ctx.fillStyle = ball.farbe;
     ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); ctx.fill();
@@ -195,6 +212,20 @@ function zeichneAlles() {
     // Spieler 2
     ctx.fillStyle = spieler2.farbe;
     ctx.beginPath(); ctx.arc(spieler2.x, spieler2.y, spieler2.radius, 0, Math.PI * 2); ctx.fill();
+
+    // Tor-Nachricht einblenden
+    if (Date.now() < torTextBis) {
+        ctx.fillStyle = "gold";
+        ctx.font = "bold 80px 'Segoe UI', Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("TOOOOR!", BREITE / 2, HOEHE / 2);
+        
+        // Eine schwarze Umrandung um den goldenen Text
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 4;
+        ctx.strokeText("TOOOOR!", BREITE / 2, HOEHE / 2);
+    }
 }
 
 
