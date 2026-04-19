@@ -10,9 +10,51 @@
 
     <!-- NEU: Unser UI-Container für Spielstand und Reset-Button -->
     <div id="ui-container">
+        <select id="teamLeft" class="team-select">
+            <option value="Bayer Leverkusen">Bayer Leverkusen</option>
+            <option value="FC Bayern" selected>FC Bayern</option>
+            <option value="VfB Stuttgart">VfB Stuttgart</option>
+            <option value="Dortmund">Dortmund</option>
+            <option value="RB Leipzig">RB Leipzig</option>
+            <option value="Eintracht Frankfurt">Eintracht Frankfurt</option>
+            <option value="Hoffenheim">Hoffenheim</option>
+            <option value="Heidenheim">Heidenheim</option>
+            <option value="Werder Bremen">Werder Bremen</option>
+            <option value="Freiburg">Freiburg</option>
+            <option value="Augsburg">Augsburg</option>
+            <option value="Wolfsburg">Wolfsburg</option>
+            <option value="Mainz 05">Mainz 05</option>
+            <option value="Gladbach">Gladbach</option>
+            <option value="Union Berlin">Union Berlin</option>
+            <option value="Bochum">Bochum</option>
+            <option value="FC St. Pauli">FC St. Pauli</option>
+            <option value="Holstein Kiel">Holstein Kiel</option>
+        </select>
+
         <div class="score-box red" id="scoreRed">0</div>
         <button id="btnReset">Reset</button>
         <div class="score-box blue" id="scoreBlue">0</div>
+
+        <select id="teamRight" class="team-select">
+            <option value="Bayer Leverkusen">Bayer Leverkusen</option>
+            <option value="FC Bayern">FC Bayern</option>
+            <option value="VfB Stuttgart">VfB Stuttgart</option>
+            <option value="Dortmund" selected>Dortmund</option>
+            <option value="RB Leipzig">RB Leipzig</option>
+            <option value="Eintracht Frankfurt">Eintracht Frankfurt</option>
+            <option value="Hoffenheim">Hoffenheim</option>
+            <option value="Heidenheim">Heidenheim</option>
+            <option value="Werder Bremen">Werder Bremen</option>
+            <option value="Freiburg">Freiburg</option>
+            <option value="Augsburg">Augsburg</option>
+            <option value="Wolfsburg">Wolfsburg</option>
+            <option value="Mainz 05">Mainz 05</option>
+            <option value="Gladbach">Gladbach</option>
+            <option value="Union Berlin">Union Berlin</option>
+            <option value="Bochum">Bochum</option>
+            <option value="FC St. Pauli">FC St. Pauli</option>
+            <option value="Holstein Kiel">Holstein Kiel</option>
+        </select>
     </div>
 
     <canvas id="gameCanvas" width="1000" height="600"></canvas>

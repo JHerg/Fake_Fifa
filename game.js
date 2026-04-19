@@ -16,6 +16,45 @@ let ball = { x: BREITE / 2, y: HOEHE / 2, radius: 10, farbe: "white", dx: 0, dy:
 let spieler1 = { x: 100, y: HOEHE / 2, radius: 20, farbe: "#ff4d4d", geschwindigkeit: 5 };
 let spieler2 = { x: BREITE - 100, y: HOEHE / 2, radius: 20, farbe: "#4da6ff", geschwindigkeit: 5 };
 
+// --- NEU: BUNDESLIGA TEAMS & FARBEN ---
+const teamFarben = {
+    "Bayer Leverkusen": "#e32221", // Schwarz-Rot
+    "FC Bayern": "#dc052d",        // Rot
+    "VfB Stuttgart": "#e32228",    // Rot-Weiß
+    "Dortmund": "#fde100",         // Gelb
+    "RB Leipzig": "#dd013f",       // Rot-Weiß
+    "Eintracht Frankfurt": "#000000", // Schwarz
+    "Hoffenheim": "#0066b2",       // Blau
+    "Heidenheim": "#e2001a",       // Rot-Blau
+    "Werder Bremen": "#1d9053",    // Grün
+    "Freiburg": "#c0001f",         // Rot
+    "Augsburg": "#ba3733",         // Rot-Grün-Weiß
+    "Wolfsburg": "#65b32e",        // Hellgrün
+    "Mainz 05": "#ed1c24",         // Rot
+    "Gladbach": "#1f1f1f",         // Dunkles Grau/Schwarz
+    "Union Berlin": "#d4011d",     // Rot
+    "Bochum": "#005ca9",           // Blau
+    "FC St. Pauli": "#533527",     // Braun
+    "Holstein Kiel": "#0060af"     // Blau
+};
+
+const teamLeftSelect = document.getElementById("teamLeft");
+const teamRightSelect = document.getElementById("teamRight");
+
+function updateTeamFarben() {
+    // Spieler-Farben aktualisieren
+    spieler1.farbe = teamFarben[teamLeftSelect.value];
+    spieler2.farbe = teamFarben[teamRightSelect.value];
+    
+    // Bonus: Auch die Anzeigetafel im HTML umfärben!
+    scoreRedEl.style.backgroundColor = spieler1.farbe;
+    scoreBlueEl.style.backgroundColor = spieler2.farbe;
+}
+
+teamLeftSelect.addEventListener("change", updateTeamFarben);
+teamRightSelect.addEventListener("change", updateTeamFarben);
+updateTeamFarben(); // Einmal am Anfang aufrufen, um die Standardwerte (Bayern vs Dortmund) zu setzen
+
 // --- NEU: DIE STEUERUNG (Welche Taste wird gerade gedrückt?) ---
 // Wir erstellen ein "Wörterbuch" (Objekt), das sich merkt, ob eine Taste gedrückt ist.
 const tasten = {};
@@ -101,9 +140,9 @@ function update() {
     if (spieler2.x + spieler2.radius > BREITE) { spieler2.x = BREITE - spieler2.radius; } // Rechts
 
     // --- NEU: BALL-PHYSIK ---
-    // 1. Reibung (der Ball rollt langsam aus)
-    ball.dx = ball.dx * 0.98;
-    ball.dy = ball.dy * 0.98;
+    // 1. Reibung (Ball rollt jetzt durch den Wert 0.99 deutlich länger und realistischer)
+    ball.dx = ball.dx * 0.99;
+    ball.dy = ball.dy * 0.99;
 
     // Ball anhand der Geschwindigkeit bewegen
     ball.x = ball.x + ball.dx;
