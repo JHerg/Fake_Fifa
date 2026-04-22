@@ -2,13 +2,12 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fake FIFA - Funino Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- NEU: Unser UI-Container für Spielstand und Reset-Button -->
     <div id="ui-container">
         <select id="teamLeft" class="team-select">
             <option value="Bayer Leverkusen">Bayer Leverkusen</option>
@@ -34,6 +33,7 @@
         <div class="score-box red" id="scoreRed">0</div>
         <div class="score-box timer" id="timerDisplay">2:00</div>
         <button id="btnStart">Spiel starten</button>
+        <button id="btnSound" class="icon-btn" title="Sound an/aus">🔊</button>
         <div class="score-box blue" id="scoreBlue">0</div>
 
         <select id="teamRight" class="team-select">
@@ -65,9 +65,11 @@
         </select>
     </div>
 
-    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        <button id="mobileDashBtn">⚡ DASH</button>
+    </div>
 
-    <!-- NEU: Ewige Tabelle unter dem Spielfeld -->
     <div id="tabelle-container">
         <h2>Ewige Tabelle</h2>
         <table id="leaderboard">
