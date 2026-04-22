@@ -51,16 +51,33 @@ body {
 }
 #btnStart:hover, .icon-btn:hover { background-color: #555; transform: scale(1.05); }
 
-.team-select {
+.team-block {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.team-select, .player-select {
     background-color: #333;
     color: white;
     font-size: 16px;
     font-weight: bold;
-    padding: 10px;
+    padding: 8px 12px;
     border: 2px solid white;
     border-radius: 5px;
     cursor: pointer;
     outline: none;
+    width: 100%;
+}
+
+.player-select {
+    font-size: 14px;
+    background-color: #222;
+    border-color: #aaa;
+}
+
+.team-select:hover, .player-select:hover {
+    background-color: #444;
 }
 
 #game-wrapper {
