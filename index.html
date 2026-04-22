@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fake FIFA - Funino Edition</title>
+    <title>Funino Pro - Season 25/26</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -80,6 +80,11 @@
 
     <div id="game-wrapper">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        
+        <div id="commentary-box" class="hidden">
+            <span class="mic-icon">🎙️</span>
+            <span id="commentary-text">Herzlich Willkommen zum Topspiel!</span>
+        </div>
 
         <div id="settings-panel" class="overlay hidden">
             <div class="overlay-content">
@@ -97,7 +102,7 @@
                     </select>
                 </div>
                 <div class="setting-row">
-                    <label>🌗 Tageszeit (Flutlicht)</label>
+                    <label>🌗 Tageszeit</label>
                     <select id="selectTime" class="player-select" style="width: 150px; text-align: center;">
                         <option value="day">☀️ Tag</option>
                         <option value="night">🌙 Nacht</option>
@@ -107,7 +112,11 @@
                     <label>🏆 Turnier-Modus</label>
                     <input type="checkbox" id="checkTournament">
                 </div>
-                <button id="btnCloseSettings">Speichern & Schließen</button>
+                <div class="setting-row" style="border-top: 1px solid #444; padding-top: 15px; margin-top: 10px;">
+                    <label>🎙️ Kommentator & Fans</label>
+                    <input type="checkbox" id="checkCommentary" checked>
+                </div>
+                <button id="btnCloseSettings" style="margin-top: 20px;">Speichern & Schließen</button>
             </div>
         </div>
 
