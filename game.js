@@ -25,6 +25,19 @@ function passeCanvasAn() {
 window.addEventListener("resize", passeCanvasAn);
 passeCanvasAn();
 
+// --- NEU: EINSTELLUNGEN & STATE ---
+const gameSettings = { replay: true, weather: false, tournament: false };
+
+document.getElementById("btnSettings").addEventListener("click", () => {
+    document.getElementById("settings-panel").classList.remove("hidden");
+});
+document.getElementById("btnCloseSettings").addEventListener("click", () => {
+    gameSettings.replay = document.getElementById("checkReplay").checked;
+    gameSettings.weather = document.getElementById("checkWeather").checked;
+    gameSettings.tournament = document.getElementById("checkTournament").checked;
+    document.getElementById("settings-panel").classList.add("hidden");
+});
+
 // --- AUDIO SYSTEM ---
 let audioCtx = null;
 let soundEnabled = true;
@@ -89,11 +102,10 @@ let spielLaeuft = false; let spielZeit = 120; let letzterFrame = Date.now(); let
 
 // --- UNSERE SPIELFIGUREN ---
 let ball = { x: BREITE / 2, y: HOEHE / 2, radius: 10, farbe: "white", dx: 0, dy: 0 };
-// NEU: img Object hinzugefügt
 let spieler1 = { x: 100, y: HOEHE / 2, radius: 25, farbe: "#ff4d4d", baseSpeed: 5, stamina: 100, isDashing: false, img: new Image() };
 let spieler2 = { x: BREITE - 100, y: HOEHE / 2, radius: 25, farbe: "#4da6ff", baseSpeed: 5, stamina: 100, isDashing: false, img: new Image() };
 
-// --- NEU: TEAMS UND SPIELER-KADER ---
+// --- TEAMS UND SPIELER-KADER ---
 const teamFarben = {
     "Bayer Leverkusen": "#e32221", "FC Bayern": "#dc052d", "VfB Stuttgart": "#e32228",
     "Dortmund": "#fde100", "RB Leipzig": "#dd013f", "Eintracht Frankfurt": "#000000",
@@ -109,7 +121,6 @@ const teamKader = {
     "VfB Stuttgart": ["Serhou Guirassy", "Deniz Undav", "Chris Führich"],
     "Dortmund": ["Julian Brandt", "Niclas Füllkrug", "Jadon Sancho"],
     "RB Leipzig": ["Xavi Simons", "Lois Openda", "Dani Olmo"]
-    // Für alle anderen generieren wir Standard-Namen
 };
 
 const teamLeftSelect = document.getElementById("teamLeft");
@@ -118,7 +129,6 @@ const playerLeftSelect = document.getElementById("playerLeft");
 const playerRightSelect = document.getElementById("playerRight");
 const aiSelect = document.getElementById("aiSelect");
 
-// UI: Lade Spieler ins Dropdown basierend auf Team
 function updatePlayerDropdowns() {
     let kaderLinks = teamKader[teamLeftSelect.value] || ["Star 1", "Star 2", "Star 3"];
     let kaderRechts = teamKader[teamRightSelect.value] || ["Star 1", "Star 2", "Star 3"];
@@ -130,7 +140,6 @@ function updatePlayerDropdowns() {
     kaderRechts.forEach(player => playerRightSelect.innerHTML += `<option value="${player}">${player}</option>`);
 }
 
-// BILDER UPDATEN
 function updateTeamUndBilder() {
     spieler1.farbe = teamFarben[teamLeftSelect.value];
     spieler2.farbe = teamFarben[teamRightSelect.value];
@@ -139,25 +148,17 @@ function updateTeamUndBilder() {
 
     let p1Name = playerLeftSelect.value;
     let p2Name = playerRightSelect.value;
-
-    // MAGIE: Wir generieren Comic-Köpfe via DiceBear API basierend auf dem Namen!
-    // WENN DU EIGENE BILDER HAST, ÄNDERE DEN LINK HIER:
-    // z.B. spieler1.img.src = `images/${p1Name.replace(' ', '_')}.png`;
     spieler1.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${p1Name}&backgroundColor=transparent`;
     spieler2.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${p2Name}&backgroundColor=transparent`;
 }
 
-// Event Listeners für Dropdowns
 teamLeftSelect.addEventListener("change", () => { updatePlayerDropdowns(); updateTeamUndBilder(); });
 teamRightSelect.addEventListener("change", () => { updatePlayerDropdowns(); updateTeamUndBilder(); });
 playerLeftSelect.addEventListener("change", updateTeamUndBilder);
 playerRightSelect.addEventListener("change", updateTeamUndBilder);
+updatePlayerDropdowns(); updateTeamUndBilder();
 
-// Initial Setup
-updatePlayerDropdowns();
-updateTeamUndBilder();
-
-// KI LOGIK
+// --- KI LOGIK ---
 let currentAiMode = "human"; let aiTargetX = BREITE - 100, aiTargetY = HOEHE / 2;
 let aiUpdateCounter = 0, aiLastX = BREITE - 100, aiLastY = HOEHE / 2, aiStuckFrames = 0; let aiBallHistory = [];
 function setzeSpielModus() {
@@ -185,34 +186,128 @@ mobDashBtn.addEventListener("touchend", (e) => { e.preventDefault(); mobileDashA
 mobDashBtn.addEventListener("mousedown", () => { mobileDashActive = true; initAudio(); });
 mobDashBtn.addEventListener("mouseup", () => { mobileDashActive = false; });
 
+// --- NEU: SYSTEM VARIABLEN (WETTER, REPLAY, TURNIER) ---
+let weatherIsRain = false;
+let mudPatches = [];
+let isReplay = false;
+let replayFrame = 0;
+let replayBuffer = [];
+let tournamentMatches = [];
+let currentMatchIndex = 0;
+
+function initWeather() {
+    mudPatches = [];
+    if (gameSettings.weather) {
+        weatherIsRain = Math.random() > 0.5;
+        if (weatherIsRain) {
+            for (let i = 0; i < 4; i++) {
+                mudPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50 });
+            }
+        }
+    } else {
+        weatherIsRain = false;
+    }
+}
+
+function initTournament() {
+    let alleTeams = Object.keys(teamFarben);
+    // Zufällige Gegner generieren
+    tournamentMatches = [
+        { t1: teamLeftSelect.value, t2: alleTeams[Math.floor(Math.random()*alleTeams.length)], stage: "Viertelfinale 1" },
+        { t1: "Offen", t2: "Offen", stage: "Halbfinale" },
+        { t1: "Offen", t2: "Offen", stage: "Finale" }
+    ];
+    currentMatchIndex = 0;
+    zeigeTurnierBaum();
+}
+
+function zeigeTurnierBaum() {
+    let container = document.getElementById("bracket-container");
+    container.innerHTML = "";
+    tournamentMatches.forEach((m, index) => {
+        let div = document.createElement("div");
+        div.className = "bracket-match" + (index === currentMatchIndex ? " match-active" : "");
+        div.innerHTML = `<small>${m.stage}</small><br><strong>${m.t1}</strong><br>vs<br><strong>${m.t2}</strong>`;
+        container.appendChild(div);
+    });
+    document.getElementById("tournament-overlay").classList.remove("hidden");
+}
+
+document.getElementById("btnNextMatch").addEventListener("click", () => {
+    document.getElementById("tournament-overlay").classList.add("hidden");
+    let match = tournamentMatches[currentMatchIndex];
+    
+    // Dropdowns für das Spiel zwingen
+    teamLeftSelect.value = match.t1;
+    teamRightSelect.value = match.t2;
+    updatePlayerDropdowns();
+    updateTeamUndBilder();
+    startMatch();
+});
+
 // --- RESET & TOR ---
 function resetPositionen() {
     ball.x = BREITE / 2; ball.y = HOEHE / 2; ball.dx = 0; ball.dy = 0;
     spieler1.x = 100; spieler1.y = HOEHE / 2; spieler1.stamina = 100;
     spieler2.x = BREITE - 100; spieler2.y = HOEHE / 2; spieler2.stamina = 100;
     mouseActive = false; aiBallHistory = []; visualBallTrail = [];
+    replayBuffer = [];
 }
 
 function torGefallen(team) {
     if (team === "rot") { toreRot++; scoreRedEl.innerText = toreRot; createExplosion(BREITE - 10, HOEHE/2, spieler1.farbe); } 
     else { toreBlau++; scoreBlueEl.innerText = toreBlau; createExplosion(10, HOEHE/2, spieler2.farbe); }
-    playSound('goal'); screenShake = 15; torTextBis = Date.now() + 2000; resetPositionen();
+    playSound('goal'); screenShake = 15; 
+    
+    // REPLAY LOGIK
+    if (gameSettings.replay && replayBuffer.length > 30) {
+        isReplay = true;
+        replayFrame = 0;
+        torTextBis = Date.now() + 5000; // Längere Pause für Replay
+    } else {
+        torTextBis = Date.now() + 2000;
+        resetPositionen();
+    }
 }
 
 document.getElementById("btnStart").addEventListener("click", function() {
-    initAudio(); playSound('whistle');
-    toreRot = 0; toreBlau = 0; scoreRedEl.innerText = "0"; scoreBlueEl.innerText = "0"; spielZeit = 120; timerEl.innerText = "2:00";
-    spielEndeText = ""; resetPositionen(); setzeSpielModus();
-    aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true;
+    initAudio();
+    if (gameSettings.tournament) {
+        initTournament();
+    } else {
+        startMatch();
+    }
 });
+
+function startMatch() {
+    playSound('whistle');
+    toreRot = 0; toreBlau = 0; scoreRedEl.innerText = "0"; scoreBlueEl.innerText = "0"; 
+    spielZeit = 120; timerEl.innerText = "2:00";
+    spielEndeText = ""; isReplay = false;
+    initWeather();
+    resetPositionen(); setzeSpielModus();
+    aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true;
+}
 
 // --- TABELLEN LOGIK ---
 function spielBeenden() {
     playSound('whistle'); let teamLinks = teamLeftSelect.value; let teamRechts = teamRightSelect.value;
-    if (toreRot > toreBlau) { spielEndeText = teamLinks + " gewinnt!"; speichereErgebnis(teamLinks, "sieg"); speichereErgebnis(teamRechts, "niederlage"); } 
-    else if (toreBlau > toreRot) { spielEndeText = teamRechts + " gewinnt!"; speichereErgebnis(teamRechts, "sieg"); speichereErgebnis(teamLinks, "niederlage"); } 
-    else { spielEndeText = "Unentschieden!"; speichereErgebnis(teamLinks, "unentschieden"); speichereErgebnis(teamRechts, "unentschieden"); }
+    
+    let sieger = "";
+    if (toreRot > toreBlau) { spielEndeText = teamLinks + " gewinnt!"; sieger = teamLinks; speichereErgebnis(teamLinks, "sieg"); speichereErgebnis(teamRechts, "niederlage"); } 
+    else if (toreBlau > toreRot) { spielEndeText = teamRechts + " gewinnt!"; sieger = teamRechts; speichereErgebnis(teamRechts, "sieg"); speichereErgebnis(teamLinks, "niederlage"); } 
+    else { spielEndeText = "Unentschieden!"; sieger = "Münzwurf: " + teamLinks; speichereErgebnis(teamLinks, "unentschieden"); speichereErgebnis(teamRechts, "unentschieden"); }
     aktualisiereTabelle();
+
+    // Turnier-Logik Fortschritt
+    if (gameSettings.tournament) {
+        let match = tournamentMatches[currentMatchIndex];
+        currentMatchIndex++;
+        if (currentMatchIndex === 1) tournamentMatches[1].t1 = sieger; // Ins Halbfinale
+        if (currentMatchIndex === 2) tournamentMatches[2].t1 = sieger; // Ins Finale
+        
+        setTimeout(() => { zeigeTurnierBaum(); }, 3000);
+    }
 }
 
 function speichereErgebnis(teamName, ergebnisTyp) {
@@ -240,10 +335,30 @@ aktualisiereTabelle();
 function update() {
     if (!spielLaeuft) return;
     let jetzt = Date.now(); let dt = (jetzt - letzterFrame) / 1000; letzterFrame = jetzt;
+
+    // --- REPLAY LOGIK ---
+    if (isReplay) {
+        replayFrame += 0.5; // Halbe Geschwindigkeit = Zeitlupe
+        if (replayFrame >= replayBuffer.length) {
+            isReplay = false;
+            resetPositionen();
+        } else {
+            let snap = replayBuffer[Math.floor(replayFrame)];
+            ball.x = snap.bx; ball.y = snap.by;
+            spieler1.x = snap.p1x; spieler1.y = snap.p1y; spieler1.stamina = snap.p1s; spieler1.isDashing = snap.p1d;
+            spieler2.x = snap.p2x; spieler2.y = snap.p2y; spieler2.stamina = snap.p2s; spieler2.isDashing = snap.p2d;
+        }
+        return; // Physik und Timer überspringen
+    }
+
     spielZeit -= dt; if (spielZeit <= 0) { spielZeit = 0; spielLaeuft = false; spielBeenden(); }
     let minuten = Math.floor(spielZeit / 60); let sekunden = Math.floor(spielZeit % 60);
     timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
+    // Snapshots für Replay speichern (180 Frames = ca. 3 Sekunden)
+    replayBuffer.push({ bx: ball.x, by: ball.y, p1x: spieler1.x, p1y: spieler1.y, p1s: spieler1.stamina, p1d: spieler1.isDashing, p2x: spieler2.x, p2y: spieler2.y, p2s: spieler2.stamina, p2d: spieler2.isDashing });
+    if (replayBuffer.length > 180) replayBuffer.shift();
+
     let ballSpeed = Math.sqrt(ball.dx*ball.dx + ball.dy*ball.dy);
     if (ballSpeed > 5) visualBallTrail.push({x: ball.x, y: ball.y, alpha: 0.5});
     if (visualBallTrail.length > 10) visualBallTrail.shift();
@@ -273,8 +388,16 @@ function update() {
 
     spieler1.isDashing = (tasten[" "] || mobileDashActive) && spieler1.stamina > 0;
     spieler2.isDashing = (tasten["Shift"] || tasten["Enter"]) && spieler2.stamina > 0;
-    let s1AktuelleSpeed = spieler1.isDashing ? spieler1.baseSpeed * 2.5 : spieler1.baseSpeed;
-    let s2AktuelleSpeed = spieler2.isDashing ? spieler2.baseSpeed * 2.5 : spieler2.baseSpeed;
+    
+    // WETTER: Matsch verlangsamt Spieler
+    let s1MudMod = 1; let s2MudMod = 1;
+    for(let m of mudPatches) {
+        if(Math.hypot(spieler1.x - m.x, spieler1.y - m.y) < m.r) s1MudMod = 0.5;
+        if(Math.hypot(spieler2.x - m.x, spieler2.y - m.y) < m.r) s2MudMod = 0.5;
+    }
+
+    let s1AktuelleSpeed = (spieler1.isDashing ? spieler1.baseSpeed * 2.5 : spieler1.baseSpeed) * s1MudMod;
+    let s2AktuelleSpeed = (spieler2.isDashing ? spieler2.baseSpeed * 2.5 : spieler2.baseSpeed) * s2MudMod;
 
     if (spieler1.isDashing) spieler1.stamina -= 2; else if (spieler1.stamina < 100) spieler1.stamina += 0.5;
     if (spieler2.isDashing) spieler2.stamina -= 2; else if (spieler2.stamina < 100) spieler2.stamina += 0.5;
@@ -314,7 +437,10 @@ function update() {
             spieler2.x += (pDx / pDistanz) * (pUeberlappung / 2); spieler2.y += (pDy / pDistanz) * (pUeberlappung / 2);
         }
 
-        ball.dx *= Math.pow(0.99, 1/SUBSTEPS); ball.dy *= Math.pow(0.99, 1/SUBSTEPS);
+        // WETTER: Bei Regen weniger Reibung = schnellerer Ball
+        let friction = weatherIsRain ? 0.998 : 0.99;
+        ball.dx *= Math.pow(friction, 1/SUBSTEPS); ball.dy *= Math.pow(friction, 1/SUBSTEPS);
+        
         let maxBallSpeed = (spieler1.radius * 2) + 10; let currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
         if (currentSpeed > maxBallSpeed) { ball.dx = (ball.dx / currentSpeed) * maxBallSpeed; ball.dy = (ball.dy / currentSpeed) * maxBallSpeed; }
         ball.x += ball.dx / SUBSTEPS; ball.y += ball.dy / SUBSTEPS;
@@ -326,18 +452,18 @@ function update() {
                 let richtungX = abstandX / distanz; let richtungY = abstandY / distanz; let ueberlappung = minAbstand - distanz;
                 ball.x += richtungX * ueberlappung; ball.y += richtungY * ueberlappung;
                 let pushKraft = sp.isDashing ? 40 : 15; ball.dx += richtungX * (pushKraft / SUBSTEPS); ball.dy += richtungY * (pushKraft / SUBSTEPS);
-                if (pushKraft === 40 && step === 0) playSound('kick');
+                if (pushKraft === 40 && step === 0 && !isReplay) playSound('kick');
             }
         }
 
         let torOben = (HOEHE / 2) - 60; let torUnten = (HOEHE / 2) + 60;
         if (ball.x - ball.radius < 0) { 
             if (ball.y > torOben && ball.y < torUnten) { torGefallen("blau"); return; } 
-            else { ball.x = ball.radius; ball.dx = Math.abs(ball.dx); if(Math.abs(ball.dx) > 5) playSound('kick'); }
+            else { ball.x = ball.radius; ball.dx = Math.abs(ball.dx); if(Math.abs(ball.dx) > 5 && !isReplay) playSound('kick'); }
         }
         if (ball.x + ball.radius > BREITE) { 
             if (ball.y > torOben && ball.y < torUnten) { torGefallen("rot"); return; } 
-            else { ball.x = BREITE - ball.radius; ball.dx = -Math.abs(ball.dx); if(Math.abs(ball.dx) > 5) playSound('kick'); }
+            else { ball.x = BREITE - ball.radius; ball.dx = -Math.abs(ball.dx); if(Math.abs(ball.dx) > 5 && !isReplay) playSound('kick'); }
         }
         if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.dy = Math.abs(ball.dy); }
         if (ball.y + ball.radius > HOEHE) { ball.y = HOEHE - ball.radius; ball.dy = -Math.abs(ball.dy); }
@@ -348,55 +474,44 @@ function update() {
     }
 }
 
-// --- NEU: HILFSFUNKTION FÜR RUNDE AVATARE ---
+// --- ZEICHNEN ---
 function zeichneSpielerMitAvatar(spieler) {
     ctx.save();
-    
-    // 1. Zuerst die Farbe des Teams als Hintergrund malen
     ctx.fillStyle = spieler.farbe;
-    ctx.beginPath();
-    ctx.arc(spieler.x, spieler.y, spieler.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. Clipping Maske erstellen (damit das Bild nicht über den Kreis ragt)
-    ctx.beginPath();
-    ctx.arc(spieler.x, spieler.y, spieler.radius, 0, Math.PI * 2);
-    ctx.clip(); // Ab hier wird alles, was über den Kreis hinausgeht, abgeschnitten!
-
-    // 3. Bild in den Kreis zeichnen (falls es geladen ist)
+    ctx.beginPath(); ctx.arc(spieler.x, spieler.y, spieler.radius, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(spieler.x, spieler.y, spieler.radius, 0, Math.PI * 2); ctx.clip(); 
     if (spieler.img.complete && spieler.img.naturalHeight !== 0) {
-        // Wir zeichnen das Bild exakt zentriert über die Koordinaten
         let imgSize = spieler.radius * 2;
         ctx.drawImage(spieler.img, spieler.x - spieler.radius, spieler.y - spieler.radius, imgSize, imgSize);
     }
+    ctx.restore(); 
 
-    ctx.restore(); // Maske wieder entfernen
+    ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(spieler.x, spieler.y, spieler.radius, 0, Math.PI * 2); ctx.stroke();
 
-    // 4. Ein cooler Rand um den Spieler, damit er sich vom Rasen abhebt
-    ctx.strokeStyle = "rgba(255,255,255,0.8)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(spieler.x, spieler.y, spieler.radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // 5. Ausdauerbalken über den Kopf malen
     ctx.fillStyle = "black"; ctx.fillRect(spieler.x - 16, spieler.y - 35, 32, 6);
     ctx.fillStyle = spieler.stamina > 20 ? "#00ff00" : "red";
     ctx.fillRect(spieler.x - 15, spieler.y - 34, 30 * (Math.max(0, spieler.stamina)/100), 4);
 }
 
-// --- DRAW LOOP ---
 function zeichneAlles() {
     ctx.save();
-    if (screenShake > 0.5) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.9; }
+    if (screenShake > 0.5 && !isReplay) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.9; }
 
-    ctx.fillStyle = "#2e8b57"; ctx.fillRect(0, 0, BREITE, HOEHE);
+    // WETTER: Dunklerer Rasen bei Regen
+    ctx.fillStyle = weatherIsRain ? "#246b43" : "#2e8b57"; 
+    ctx.fillRect(0, 0, BREITE, HOEHE);
     ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; for (let i = 0; i < BREITE; i += 100) ctx.fillRect(i, 0, 50, HOEHE);
+
+    // WETTER: Matsch zeichnen
+    ctx.fillStyle = "rgba(60, 40, 20, 0.6)";
+    for(let m of mudPatches) {
+        ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI*2); ctx.fill();
+    }
 
     ctx.strokeStyle = "white"; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(BREITE / 2, 0); ctx.lineTo(BREITE / 2, HOEHE); ctx.stroke();
     ctx.beginPath(); ctx.arc(BREITE / 2, HOEHE / 2, 60, 0, Math.PI * 2); ctx.stroke();
-
     ctx.fillStyle = "white"; ctx.fillRect(0, HOEHE / 2 - 60, 10, 120); ctx.fillRect(BREITE - 10, HOEHE / 2 - 60, 10, 120);
 
     for (let t of visualBallTrail) {
@@ -415,18 +530,32 @@ function zeichneAlles() {
 
     ctx.fillStyle = ball.farbe; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); ctx.fill();
 
-    // NEU: Unsere verbesserte Render-Methode für die Avatare aufrufen!
     zeichneSpielerMitAvatar(spieler1);
     zeichneSpielerMitAvatar(spieler2);
 
+    // WETTER: Regen Visualisierung
+    if (weatherIsRain) {
+        ctx.strokeStyle = "rgba(200,200,255,0.3)";
+        ctx.lineWidth = 1;
+        for(let i=0; i<30; i++) {
+            let rx = Math.random()*BREITE; let ry = Math.random()*HOEHE;
+            ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx-5, ry+15); ctx.stroke();
+        }
+    }
+
     ctx.restore();
 
-    if (Date.now() < torTextBis) {
+    if (isReplay) {
+        ctx.fillStyle = "rgba(255, 215, 0, 0.8)"; ctx.font = "bold 40px 'Segoe UI', Arial";
+        ctx.textAlign = "center"; ctx.fillText("🎥 REPLAY", BREITE / 2, 50);
+    }
+
+    if (Date.now() < torTextBis && !isReplay) {
         ctx.fillStyle = "gold"; ctx.font = "bold 80px 'Segoe UI', Arial, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("TOOOOR!", BREITE / 2, HOEHE / 2); ctx.strokeStyle = "black"; ctx.lineWidth = 4; ctx.strokeText("TOOOOR!", BREITE / 2, HOEHE / 2);
     }
 
-    if (!spielLaeuft) {
+    if (!spielLaeuft && !isReplay) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; ctx.fillRect(0, 0, BREITE, HOEHE); ctx.textAlign = "center"; ctx.textBaseline = "middle";
         if (spielEndeText !== "") {
             ctx.fillStyle = "white"; ctx.font = "bold 60px 'Segoe UI', Arial, sans-serif"; ctx.fillText("SPIELENDE", BREITE / 2, HOEHE / 2 - 40);

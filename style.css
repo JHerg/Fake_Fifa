@@ -25,6 +25,12 @@ body {
     margin-bottom: 20px;
 }
 
+.team-block {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .score-box {
     font-size: 32px;
     font-weight: bold;
@@ -36,6 +42,9 @@ body {
 .score-box.red { background-color: #ff4d4d; }
 .score-box.blue { background-color: #4da6ff; }
 .score-box.timer { background-color: #222; }
+
+.main-controls { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.icon-group { display: flex; gap: 5px; }
 
 #btnStart, .icon-btn {
     padding: 12px 20px;
@@ -51,12 +60,6 @@ body {
 }
 #btnStart:hover, .icon-btn:hover { background-color: #555; transform: scale(1.05); }
 
-.team-block {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
 .team-select, .player-select {
     background-color: #333;
     color: white;
@@ -69,20 +72,10 @@ body {
     outline: none;
     width: 100%;
 }
+.player-select { font-size: 14px; background-color: #222; border-color: #aaa; }
+.team-select:hover, .player-select:hover { background-color: #444; }
 
-.player-select {
-    font-size: 14px;
-    background-color: #222;
-    border-color: #aaa;
-}
-
-.team-select:hover, .player-select:hover {
-    background-color: #444;
-}
-
-#game-wrapper {
-    position: relative; /* Wichtig für die Positionierung des Mobile-Buttons */
-}
+#game-wrapper { position: relative; }
 
 canvas {
     background-color: white;
@@ -91,9 +84,8 @@ canvas {
     touch-action: none;
 }
 
-/* Der Dash-Button für Touch-Geräte */
 #mobileDashBtn {
-    display: none; /* Auf dem PC unsichtbar */
+    display: none;
     position: absolute;
     bottom: 20px;
     right: 20px;
@@ -109,10 +101,7 @@ canvas {
     user-select: none;
     -webkit-user-select: none;
 }
-#mobileDashBtn:active {
-    background-color: gold;
-    transform: scale(0.95);
-}
+#mobileDashBtn:active { background-color: gold; transform: scale(0.95); }
 
 #tabelle-container {
     margin-top: 30px;
@@ -131,19 +120,45 @@ canvas {
 #leaderboard th, #leaderboard td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 18px; }
 #leaderboard th { background-color: rgba(0, 0, 0, 0.4); }
 
-/* --- MOBIL-OPTIMIERUNG --- */
+/* --- NEU: MODALS / OVERLAYS --- */
+.overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    border-radius: 10px;
+}
+.hidden { display: none !important; }
+.overlay-content {
+    background: #222;
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid white;
+    text-align: center;
+    min-width: 350px;
+}
+.overlay-content h2 { margin-top: 0; color: gold; border-bottom: 2px solid white; padding-bottom: 10px; }
+.setting-row { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 18px; align-items: center;}
+.setting-row input { transform: scale(1.5); cursor: pointer; }
+#btnCloseSettings, #btnNextMatch {
+    padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer;
+    background-color: #1d9053; color: white; border: 2px solid white; border-radius: 5px;
+}
+#btnCloseSettings:hover, #btnNextMatch:hover { background-color: #27ae60; }
+.bracket-match {
+    background: #111; border: 1px solid #444; padding: 10px; border-radius: 8px; margin: 10px 0;
+}
+.match-active { border-color: gold; box-shadow: 0 0 15px rgba(255,215,0,0.5); }
+
 @media (max-width: 800px) {
     #ui-container { padding: 10px; gap: 8px; }
     .score-box { font-size: 20px; padding: 8px 12px; }
-    .team-select { font-size: 14px; padding: 8px; max-width: 150px; }
+    .team-select, .player-select { font-size: 14px; padding: 8px; max-width: 150px; }
     #btnStart { padding: 10px; font-size: 14px; }
     #tabelle-container { padding: 10px; }
     #leaderboard th, #leaderboard td { font-size: 14px; padding: 8px; }
-    
-    /* Auf Touch-Geräten den Dash-Button einblenden */
-    #mobileDashBtn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    #mobileDashBtn { display: flex; align-items: center; justify-content: center; }
 }

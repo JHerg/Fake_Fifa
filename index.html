@@ -35,8 +35,15 @@
 
         <div class="score-box red" id="scoreRed">0</div>
         <div class="score-box timer" id="timerDisplay">2:00</div>
-        <button id="btnStart">Spiel starten</button>
-        <button id="btnSound" class="icon-btn" title="Sound an/aus">🔊</button>
+        
+        <div class="main-controls">
+            <button id="btnStart">Spiel starten</button>
+            <div class="icon-group">
+                <button id="btnSettings" class="icon-btn" title="Einstellungen">⚙️</button>
+                <button id="btnSound" class="icon-btn" title="Sound an/aus">🔊</button>
+            </div>
+        </div>
+
         <div class="score-box blue" id="scoreBlue">0</div>
 
         <div class="team-block">
@@ -74,6 +81,33 @@
     <div id="game-wrapper">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         <button id="mobileDashBtn">⚡ DASH</button>
+
+        <div id="settings-panel" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Spieleinstellungen</h2>
+                <div class="setting-row">
+                    <label>🎥 Instant Replay (Zeitlupe nach Tor)</label>
+                    <input type="checkbox" id="checkReplay" checked>
+                </div>
+                <div class="setting-row">
+                    <label>🌧️ Dynamisches Wetter (Regen & Matsch)</label>
+                    <input type="checkbox" id="checkWeather">
+                </div>
+                <div class="setting-row">
+                    <label>🏆 Turnier-Modus (K.O. System)</label>
+                    <input type="checkbox" id="checkTournament">
+                </div>
+                <button id="btnCloseSettings">Speichern & Schließen</button>
+            </div>
+        </div>
+
+        <div id="tournament-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>🏆 Turnier-Baum</h2>
+                <div id="bracket-container"></div>
+                <button id="btnNextMatch">Nächstes Spiel starten</button>
+            </div>
+        </div>
     </div>
 
     <div id="tabelle-container">
