@@ -9,7 +9,6 @@ function passeCanvasAn() {
     let fensterHoehe = window.innerHeight;
     let verfuegbareHoehe = fensterHoehe - 220; 
     let seitenVerhaeltnis = BREITE / HOEHE; 
-    
     let neueBreite = fensterBreite * 0.95; 
     let neueHoehe = neueBreite / seitenVerhaeltnis;
     
@@ -17,7 +16,6 @@ function passeCanvasAn() {
         neueHoehe = verfuegbareHoehe;
         neueBreite = neueHoehe * seitenVerhaeltnis;
     }
-    
     canvas.style.width = neueBreite + "px";
     canvas.style.height = neueHoehe + "px";
 }
@@ -35,8 +33,6 @@ document.getElementById("btnCloseSettings").addEventListener("click", () => {
     gameSettings.weather = document.getElementById("selectWeather").value;
     gameSettings.tournament = document.getElementById("checkTournament").checked;
     document.getElementById("settings-panel").classList.add("hidden");
-    
-    // NEU: Wetter sofort live updaten, auch mitten im Spiel!
     initWeather();
 });
 
@@ -62,8 +58,7 @@ function playSound(type) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    osc.connect(gainNode); gainNode.connect(audioCtx.destination);
     let now = audioCtx.currentTime;
 
     if (type === 'kick') {
@@ -83,16 +78,11 @@ function playSound(type) {
 
 // --- VISUAL JUICE ---
 let particles = []; let screenShake = 0; let visualBallTrail = [];
-
 function createExplosion(x, y, farbe) {
-    for (let i = 0; i < 30; i++) {
-        particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 1.0, color: farbe, size: Math.random() * 5 + 2 });
-    }
+    for (let i = 0; i < 30; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 1.0, color: farbe, size: Math.random() * 5 + 2 });
 }
 function createDust(x, y) {
-    if (Math.random() > 0.5) {
-        particles.push({ x: x + (Math.random() - 0.5) * 10, y: y + (Math.random() - 0.5) * 10, vx: 0, vy: -1, life: 0.5, color: "rgba(255,255,255,0.4)", size: 3 });
-    }
+    if (Math.random() > 0.5) particles.push({ x: x + (Math.random() - 0.5) * 10, y: y + (Math.random() - 0.5) * 10, vx: 0, vy: -1, life: 0.5, color: "rgba(255,255,255,0.4)", size: 3 });
 }
 
 // --- SPIEL-VARIABLEN ---
@@ -107,22 +97,35 @@ let ball = { x: BREITE / 2, y: HOEHE / 2, radius: 10, farbe: "white", dx: 0, dy:
 let spieler1 = { x: 100, y: HOEHE / 2, radius: 25, farbe: "#ff4d4d", baseSpeed: 5, stamina: 100, isDashing: false, img: new Image() };
 let spieler2 = { x: BREITE - 100, y: HOEHE / 2, radius: 25, farbe: "#4da6ff", baseSpeed: 5, stamina: 100, isDashing: false, img: new Image() };
 
-// --- TEAMS UND SPIELER-KADER ---
+// --- TEAMS UND ALLE SPIELER-KADER DER SAISON 25/26 ---
 const teamFarben = {
     "Bayer Leverkusen": "#e32221", "FC Bayern": "#dc052d", "VfB Stuttgart": "#e32228",
-    "Dortmund": "#fde100", "RB Leipzig": "#dd013f", "Eintracht Frankfurt": "#000000",
-    "Hoffenheim": "#0066b2", "Heidenheim": "#e2001a", "Werder Bremen": "#1d9053",
-    "Freiburg": "#c0001f", "Augsburg": "#ba3733", "Wolfsburg": "#65b32e",
+    "Borussia Dortmund": "#fde100", "RB Leipzig": "#dd013f", "Eintracht Frankfurt": "#000000",
+    "TSG Hoffenheim": "#0066b2", "1. FC Heidenheim": "#e2001a", "Werder Bremen": "#1d9053",
+    "SC Freiburg": "#c0001f", "FC Augsburg": "#ba3733", "VfL Wolfsburg": "#65b32e",
     "Mainz 05": "#ed1c24", "Gladbach": "#1f1f1f", "Union Berlin": "#d4011d",
-    "Bochum": "#005ca9", "FC St. Pauli": "#533527", "Holstein Kiel": "#0060af"
+    "FC St. Pauli": "#533527", "Hamburger SV": "#005ca9", "1. FC Köln": "#ed1c24"
 };
 
 const teamKader = {
     "Bayer Leverkusen": ["Florian Wirtz", "Granit Xhaka", "Jeremie Frimpong"],
-    "FC Bayern": ["Harry Kane", "Jamal Musiala", "Thomas Müller"],
-    "VfB Stuttgart": ["Serhou Guirassy", "Deniz Undav", "Chris Führich"],
-    "Dortmund": ["Julian Brandt", "Niclas Füllkrug", "Jadon Sancho"],
-    "RB Leipzig": ["Xavi Simons", "Lois Openda", "Dani Olmo"]
+    "FC Bayern": ["Harry Kane", "Jamal Musiala", "Leroy Sané"],
+    "VfB Stuttgart": ["Alexander Nübel", "Angelo Stiller", "Enzo Millot"],
+    "Borussia Dortmund": ["Julian Brandt", "Nico Schlotterbeck", "Serhou Guirassy"],
+    "RB Leipzig": ["Xavi Simons", "Lois Openda", "Benjamin Sesko"],
+    "Eintracht Frankfurt": ["Omar Marmoush", "Hugo Ekitiké", "Mario Götze"],
+    "TSG Hoffenheim": ["Andrej Kramaric", "Oliver Baumann", "Anton Stach"],
+    "1. FC Heidenheim": ["Paul Wanner", "Marvin Pieringer", "Kevin Müller"],
+    "Werder Bremen": ["Mitchell Weiser", "Romano Schmid", "Marvin Ducksch"],
+    "SC Freiburg": ["Vincenzo Grifo", "Ritsu Doan", "Christian Günter"],
+    "FC Augsburg": ["Phillip Tietz", "Finn Dahmen", "Arne Maier"],
+    "VfL Wolfsburg": ["Maximilian Arnold", "Jonas Wind", "Lovro Majer"],
+    "Mainz 05": ["Jonathan Burkardt", "Nadiem Amiri", "Robin Zentner"],
+    "Gladbach": ["Tim Kleindienst", "Alassane Plea", "Franck Honorat"],
+    "Union Berlin": ["Kevin Volland", "Christopher Trimmel", "Frederik Rönnow"],
+    "FC St. Pauli": ["Jackson Irvine", "Johannes Eggestein", "Nikola Vasilj"],
+    "Hamburger SV": ["Robert Glatzel", "Ludovit Reis", "Jonas Meffert"],
+    "1. FC Köln": ["Florian Kainz", "Eric Martel", "Timo Hübers"]
 };
 
 const teamLeftSelect = document.getElementById("teamLeft");
@@ -132,14 +135,12 @@ const playerRightSelect = document.getElementById("playerRight");
 const aiSelect = document.getElementById("aiSelect");
 
 function updatePlayerDropdowns() {
-    let kaderLinks = teamKader[teamLeftSelect.value] || ["Star 1", "Star 2", "Star 3"];
-    let kaderRechts = teamKader[teamRightSelect.value] || ["Star 1", "Star 2", "Star 3"];
-    
+    let kaderLinks = teamKader[teamLeftSelect.value];
+    let kaderRechts = teamKader[teamRightSelect.value];
     playerLeftSelect.innerHTML = "";
-    kaderLinks.forEach(player => playerLeftSelect.innerHTML += `<option value="${player}">${player}</option>`);
-    
+    kaderLinks.forEach(p => playerLeftSelect.innerHTML += `<option value="${p}">${p}</option>`);
     playerRightSelect.innerHTML = "";
-    kaderRechts.forEach(player => playerRightSelect.innerHTML += `<option value="${player}">${player}</option>`);
+    kaderRechts.forEach(p => playerRightSelect.innerHTML += `<option value="${p}">${p}</option>`);
 }
 
 function updateTeamUndBilder() {
@@ -147,11 +148,8 @@ function updateTeamUndBilder() {
     spieler2.farbe = teamFarben[teamRightSelect.value];
     scoreRedEl.style.backgroundColor = spieler1.farbe;
     scoreBlueEl.style.backgroundColor = spieler2.farbe;
-
-    let p1Name = playerLeftSelect.value;
-    let p2Name = playerRightSelect.value;
-    spieler1.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${p1Name}&backgroundColor=transparent`;
-    spieler2.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${p2Name}&backgroundColor=transparent`;
+    spieler1.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${playerLeftSelect.value}&backgroundColor=transparent`;
+    spieler2.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${playerRightSelect.value}&backgroundColor=transparent`;
 }
 
 teamLeftSelect.addEventListener("change", () => { updatePlayerDropdowns(); updateTeamUndBilder(); });
@@ -170,7 +168,7 @@ function setzeSpielModus() {
 aiSelect.addEventListener("change", setzeSpielModus); setzeSpielModus();
 
 // --- STEUERUNG ---
-const tasten = {}; let mouseX = null; let mouseY = null; let mouseActive = false; let mobileDashActive = false;
+const tasten = {}; let mouseX = null; let mouseY = null; let mouseActive = false;
 window.addEventListener("keydown", function(event) { tasten[event.key] = true; if (["w", "a", "s", "d", "W", "A", "S", "D"].includes(event.key)) mouseActive = false; initAudio(); });
 window.addEventListener("keyup", function(event) { tasten[event.key] = false; });
 canvas.addEventListener("mousemove", function(event) {
@@ -182,45 +180,32 @@ function handleTouch(event) {
 }
 canvas.addEventListener("touchstart", handleTouch, { passive: false }); canvas.addEventListener("touchmove", handleTouch, { passive: false });
 
-const mobDashBtn = document.getElementById("mobileDashBtn");
-mobDashBtn.addEventListener("touchstart", (e) => { e.preventDefault(); mobileDashActive = true; initAudio(); });
-mobDashBtn.addEventListener("touchend", (e) => { e.preventDefault(); mobileDashActive = false; });
-mobDashBtn.addEventListener("mousedown", () => { mobileDashActive = true; initAudio(); });
-mobDashBtn.addEventListener("mouseup", () => { mobileDashActive = false; });
-
 // --- SYSTEM VARIABLEN (WETTER, REPLAY, TURNIER) ---
 let weatherType = "sun";
 let groundPatches = [];
-let isReplay = false;
-let replayFrame = 0;
-let replayBuffer = [];
-let tournamentMatches = [];
-let currentMatchIndex = 0;
+let isReplay = false; let replayFrame = 0; let replayBuffer = [];
+let tournamentMatches = []; let currentMatchIndex = 0;
 
 function initWeather() {
     groundPatches = [];
     weatherType = gameSettings.weather;
-    
-    // Matsch bei Regen
     if (weatherType === "rain") {
-        for (let i = 0; i < 4; i++) {
-            groundPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50, type: "mud" });
-        }
-    } 
-    // Schneehaufen bei Schnee
-    else if (weatherType === "snow") {
-        for (let i = 0; i < 6; i++) {
-            groundPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 30 + Math.random() * 40, type: "snowpile" });
-        }
+        for (let i = 0; i < 4; i++) groundPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50, type: "mud" });
+    } else if (weatherType === "snow") {
+        for (let i = 0; i < 6; i++) groundPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 30 + Math.random() * 40, type: "snowpile" });
     }
 }
 
 function initTournament() {
-    let alleTeams = Object.keys(teamFarben);
+    // 1. Alle verfügbaren Gegner finden und zufällig mischen
+    let alleGegner = Object.keys(teamFarben).filter(t => t !== teamLeftSelect.value);
+    alleGegner.sort(() => 0.5 - Math.random()); 
+
+    // 2. Den kompletten Baum im Voraus festlegen (damit es immer einen Gegner gibt!)
     tournamentMatches = [
-        { t1: teamLeftSelect.value, t2: alleTeams[Math.floor(Math.random()*alleTeams.length)], stage: "Viertelfinale 1" },
-        { t1: "Offen", t2: "Offen", stage: "Halbfinale" },
-        { t1: "Offen", t2: "Offen", stage: "Finale" }
+        { t1: teamLeftSelect.value, t2: alleGegner[0], stage: "Viertelfinale" },
+        { t1: "Sieger Viertelfinale", t2: alleGegner[1], stage: "Halbfinale" },
+        { t1: "Sieger Halbfinale", t2: alleGegner[2], stage: "Finale" }
     ];
     currentMatchIndex = 0;
     zeigeTurnierBaum();
@@ -253,8 +238,7 @@ function resetPositionen() {
     ball.x = BREITE / 2; ball.y = HOEHE / 2; ball.dx = 0; ball.dy = 0;
     spieler1.x = 100; spieler1.y = HOEHE / 2; spieler1.stamina = 100;
     spieler2.x = BREITE - 100; spieler2.y = HOEHE / 2; spieler2.stamina = 100;
-    mouseActive = false; aiBallHistory = []; visualBallTrail = [];
-    replayBuffer = [];
+    mouseActive = false; aiBallHistory = []; visualBallTrail = []; replayBuffer = [];
 }
 
 function torGefallen(team) {
@@ -263,50 +247,62 @@ function torGefallen(team) {
     playSound('goal'); screenShake = 15; 
     
     if (gameSettings.replay && replayBuffer.length > 30) {
-        isReplay = true;
-        replayFrame = 0;
-        torTextBis = Date.now() + 5000;
-    } else {
-        torTextBis = Date.now() + 2000;
-        resetPositionen();
-    }
+        isReplay = true; replayFrame = 0; torTextBis = Date.now() + 5000;
+    } else { torTextBis = Date.now() + 2000; resetPositionen(); }
 }
 
 document.getElementById("btnStart").addEventListener("click", function() {
     initAudio();
-    if (gameSettings.tournament) {
-        initTournament();
-    } else {
-        startMatch();
-    }
+    if (gameSettings.tournament) initTournament(); else startMatch();
 });
 
 function startMatch() {
-    playSound('whistle');
-    toreRot = 0; toreBlau = 0; scoreRedEl.innerText = "0"; scoreBlueEl.innerText = "0"; 
-    spielZeit = 120; timerEl.innerText = "2:00";
-    spielEndeText = ""; isReplay = false;
-    initWeather();
-    resetPositionen(); setzeSpielModus();
+    playSound('whistle'); toreRot = 0; toreBlau = 0; scoreRedEl.innerText = "0"; scoreBlueEl.innerText = "0"; 
+    spielZeit = 120; timerEl.innerText = "2:00"; spielEndeText = ""; isReplay = false;
+    initWeather(); resetPositionen(); setzeSpielModus();
     aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true;
 }
 
-// --- TABELLEN LOGIK ---
+// --- SPIELENDE & TURNIER-FORTSCHRITT ---
 function spielBeenden() {
-    playSound('whistle'); let teamLinks = teamLeftSelect.value; let teamRechts = teamRightSelect.value;
+    playSound('whistle'); 
+    let teamLinks = teamLeftSelect.value; let teamRechts = teamRightSelect.value;
     
-    let sieger = "";
-    if (toreRot > toreBlau) { spielEndeText = teamLinks + " gewinnt!"; sieger = teamLinks; speichereErgebnis(teamLinks, "sieg"); speichereErgebnis(teamRechts, "niederlage"); } 
-    else if (toreBlau > toreRot) { spielEndeText = teamRechts + " gewinnt!"; sieger = teamRechts; speichereErgebnis(teamRechts, "sieg"); speichereErgebnis(teamLinks, "niederlage"); } 
-    else { spielEndeText = "Unentschieden!"; sieger = "Münzwurf: " + teamLinks; speichereErgebnis(teamLinks, "unentschieden"); speichereErgebnis(teamRechts, "unentschieden"); }
+    let spielerHatGewonnen = false;
+    if (toreRot > toreBlau) { 
+        spielEndeText = teamLinks + " gewinnt!"; spielerHatGewonnen = true; 
+        speichereErgebnis(teamLinks, "sieg"); speichereErgebnis(teamRechts, "niederlage"); 
+    } else if (toreBlau > toreRot) { 
+        spielEndeText = teamRechts + " gewinnt!"; spielerHatGewonnen = false; 
+        speichereErgebnis(teamRechts, "sieg"); speichereErgebnis(teamLinks, "niederlage"); 
+    } else { 
+        spielerHatGewonnen = Math.random() > 0.5;
+        spielEndeText = spielerHatGewonnen ? "Sieg nach Münzwurf!" : "Niederlage nach Münzwurf!";
+        speichereErgebnis(teamLinks, "unentschieden"); speichereErgebnis(teamRechts, "unentschieden"); 
+    }
     aktualisiereTabelle();
 
     if (gameSettings.tournament) {
-        let match = tournamentMatches[currentMatchIndex];
-        currentMatchIndex++;
-        if (currentMatchIndex === 1) tournamentMatches[1].t1 = sieger;
-        if (currentMatchIndex === 2) tournamentMatches[2].t1 = sieger;
-        setTimeout(() => { zeigeTurnierBaum(); }, 3000);
+        if (spielerHatGewonnen) {
+            currentMatchIndex++;
+            if (currentMatchIndex < 3) {
+                // Spieler rückt vor, Name wird ins nächste Match eingetragen
+                tournamentMatches[currentMatchIndex].t1 = teamLinks;
+                setTimeout(() => { zeigeTurnierBaum(); }, 3000);
+            } else {
+                setTimeout(() => { 
+                    alert("🏆 HERZLICHEN GLÜCKWUNSCH! DU HAST DAS TURNIER GEWONNEN! 🏆"); 
+                    document.getElementById("checkTournament").checked = false;
+                    gameSettings.tournament = false;
+                }, 1500);
+            }
+        } else {
+            setTimeout(() => { 
+                alert("❌ Ausgeschieden! Du hast das Turnier leider verloren."); 
+                document.getElementById("checkTournament").checked = false;
+                gameSettings.tournament = false;
+            }, 1500);
+        }
     }
 }
 
@@ -339,8 +335,7 @@ function update() {
     if (isReplay) {
         replayFrame += 0.5;
         if (replayFrame >= replayBuffer.length) {
-            isReplay = false;
-            resetPositionen();
+            isReplay = false; resetPositionen();
         } else {
             let snap = replayBuffer[Math.floor(replayFrame)];
             ball.x = snap.bx; ball.y = snap.by;
@@ -384,20 +379,13 @@ function update() {
         }
     }
 
-    spieler1.isDashing = (tasten[" "] || mobileDashActive) && spieler1.stamina > 0;
+    spieler1.isDashing = tasten[" "] && spieler1.stamina > 0;
     spieler2.isDashing = (tasten["Shift"] || tasten["Enter"]) && spieler2.stamina > 0;
     
-    // WETTER: Matsch oder tiefer Schnee verlangsamen die Spieler
     let s1SpeedMod = 1; let s2SpeedMod = 1;
     for(let patch of groundPatches) {
-        if(Math.hypot(spieler1.x - patch.x, spieler1.y - patch.y) < patch.r) {
-            if (patch.type === "mud") s1SpeedMod = 0.5;
-            if (patch.type === "snowpile") s1SpeedMod = 0.3; // Tiefer Schnee bremst stärker
-        }
-        if(Math.hypot(spieler2.x - patch.x, spieler2.y - patch.y) < patch.r) {
-            if (patch.type === "mud") s2SpeedMod = 0.5;
-            if (patch.type === "snowpile") s2SpeedMod = 0.3;
-        }
+        if(Math.hypot(spieler1.x - patch.x, spieler1.y - patch.y) < patch.r) { if (patch.type === "mud") s1SpeedMod = 0.5; if (patch.type === "snowpile") s1SpeedMod = 0.3; }
+        if(Math.hypot(spieler2.x - patch.x, spieler2.y - patch.y) < patch.r) { if (patch.type === "mud") s2SpeedMod = 0.5; if (patch.type === "snowpile") s2SpeedMod = 0.3; }
     }
 
     let s1AktuelleSpeed = (spieler1.isDashing ? spieler1.baseSpeed * 2.5 : spieler1.baseSpeed) * s1SpeedMod;
@@ -441,10 +429,9 @@ function update() {
             spieler2.x += (pDx / pDistanz) * (pUeberlappung / 2); spieler2.y += (pDy / pDistanz) * (pUeberlappung / 2);
         }
 
-        // WETTER: Ball-Reibung dynamisch anpassen
-        let friction = 0.99; // Standard Sonne
-        if (weatherType === "rain") friction = 0.998; // Ball rutscht ewig
-        if (weatherType === "snow") friction = 0.97;  // Ball bleibt sofort stecken
+        let friction = 0.99; 
+        if (weatherType === "rain") friction = 0.998; 
+        if (weatherType === "snow") friction = 0.97;  
         
         ball.dx *= Math.pow(friction, 1/SUBSTEPS); ball.dy *= Math.pow(friction, 1/SUBSTEPS);
         
@@ -505,19 +492,15 @@ function zeichneAlles() {
     ctx.save();
     if (screenShake > 0.5 && !isReplay) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.9; }
 
-    // WETTER: Rasenfarbe anpassen
     if (weatherType === "rain") ctx.fillStyle = "#246b43"; 
-    else if (weatherType === "snow") ctx.fillStyle = "#d1e8e2"; // Schneeweißes Grün
+    else if (weatherType === "snow") ctx.fillStyle = "#d1e8e2"; 
     else ctx.fillStyle = "#2e8b57"; 
-    
     ctx.fillRect(0, 0, BREITE, HOEHE);
     
-    // Streifen (Bei Schnee ausblenden für glatte Optik)
     if (weatherType !== "snow") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; for (let i = 0; i < BREITE; i += 100) ctx.fillRect(i, 0, 50, HOEHE);
     }
 
-    // WETTER: Flecken zeichnen
     for(let m of groundPatches) {
         ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI*2);
         if (m.type === "mud") ctx.fillStyle = "rgba(60, 40, 20, 0.6)";
@@ -549,7 +532,6 @@ function zeichneAlles() {
     zeichneSpielerMitAvatar(spieler1);
     zeichneSpielerMitAvatar(spieler2);
 
-    // WETTER: Atmosphäre (Tropfen oder Flocken)
     if (weatherType === "rain") {
         ctx.strokeStyle = "rgba(200,200,255,0.3)"; ctx.lineWidth = 1;
         for(let i=0; i<30; i++) {
