@@ -120,7 +120,6 @@ canvas {
 #leaderboard th, #leaderboard td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 18px; }
 #leaderboard th { background-color: rgba(0, 0, 0, 0.4); }
 
-/* --- NEU: MODALS / OVERLAYS --- */
 .overlay {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;

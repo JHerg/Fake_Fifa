@@ -4,7 +4,6 @@ const ctx = canvas.getContext("2d");
 const BREITE = canvas.width;
 const HOEHE = canvas.height;
 
-// --- RESPONSIVES CANVAS ---
 function passeCanvasAn() {
     let fensterBreite = window.innerWidth;
     let fensterHoehe = window.innerHeight;
@@ -25,17 +24,20 @@ function passeCanvasAn() {
 window.addEventListener("resize", passeCanvasAn);
 passeCanvasAn();
 
-// --- NEU: EINSTELLUNGEN & STATE ---
-const gameSettings = { replay: true, weather: false, tournament: false };
+// --- EINSTELLUNGEN & STATE ---
+const gameSettings = { replay: true, weather: "sun", tournament: false };
 
 document.getElementById("btnSettings").addEventListener("click", () => {
     document.getElementById("settings-panel").classList.remove("hidden");
 });
 document.getElementById("btnCloseSettings").addEventListener("click", () => {
     gameSettings.replay = document.getElementById("checkReplay").checked;
-    gameSettings.weather = document.getElementById("checkWeather").checked;
+    gameSettings.weather = document.getElementById("selectWeather").value;
     gameSettings.tournament = document.getElementById("checkTournament").checked;
     document.getElementById("settings-panel").classList.add("hidden");
+    
+    // NEU: Wetter sofort live updaten, auch mitten im Spiel!
+    initWeather();
 });
 
 // --- AUDIO SYSTEM ---
@@ -186,9 +188,9 @@ mobDashBtn.addEventListener("touchend", (e) => { e.preventDefault(); mobileDashA
 mobDashBtn.addEventListener("mousedown", () => { mobileDashActive = true; initAudio(); });
 mobDashBtn.addEventListener("mouseup", () => { mobileDashActive = false; });
 
-// --- NEU: SYSTEM VARIABLEN (WETTER, REPLAY, TURNIER) ---
-let weatherIsRain = false;
-let mudPatches = [];
+// --- SYSTEM VARIABLEN (WETTER, REPLAY, TURNIER) ---
+let weatherType = "sun";
+let groundPatches = [];
 let isReplay = false;
 let replayFrame = 0;
 let replayBuffer = [];
@@ -196,22 +198,25 @@ let tournamentMatches = [];
 let currentMatchIndex = 0;
 
 function initWeather() {
-    mudPatches = [];
-    if (gameSettings.weather) {
-        weatherIsRain = Math.random() > 0.5;
-        if (weatherIsRain) {
-            for (let i = 0; i < 4; i++) {
-                mudPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50 });
-            }
+    groundPatches = [];
+    weatherType = gameSettings.weather;
+    
+    // Matsch bei Regen
+    if (weatherType === "rain") {
+        for (let i = 0; i < 4; i++) {
+            groundPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50, type: "mud" });
         }
-    } else {
-        weatherIsRain = false;
+    } 
+    // Schneehaufen bei Schnee
+    else if (weatherType === "snow") {
+        for (let i = 0; i < 6; i++) {
+            groundPatches.push({ x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 30 + Math.random() * 40, type: "snowpile" });
+        }
     }
 }
 
 function initTournament() {
     let alleTeams = Object.keys(teamFarben);
-    // Zufällige Gegner generieren
     tournamentMatches = [
         { t1: teamLeftSelect.value, t2: alleTeams[Math.floor(Math.random()*alleTeams.length)], stage: "Viertelfinale 1" },
         { t1: "Offen", t2: "Offen", stage: "Halbfinale" },
@@ -236,8 +241,6 @@ function zeigeTurnierBaum() {
 document.getElementById("btnNextMatch").addEventListener("click", () => {
     document.getElementById("tournament-overlay").classList.add("hidden");
     let match = tournamentMatches[currentMatchIndex];
-    
-    // Dropdowns für das Spiel zwingen
     teamLeftSelect.value = match.t1;
     teamRightSelect.value = match.t2;
     updatePlayerDropdowns();
@@ -259,11 +262,10 @@ function torGefallen(team) {
     else { toreBlau++; scoreBlueEl.innerText = toreBlau; createExplosion(10, HOEHE/2, spieler2.farbe); }
     playSound('goal'); screenShake = 15; 
     
-    // REPLAY LOGIK
     if (gameSettings.replay && replayBuffer.length > 30) {
         isReplay = true;
         replayFrame = 0;
-        torTextBis = Date.now() + 5000; // Längere Pause für Replay
+        torTextBis = Date.now() + 5000;
     } else {
         torTextBis = Date.now() + 2000;
         resetPositionen();
@@ -299,13 +301,11 @@ function spielBeenden() {
     else { spielEndeText = "Unentschieden!"; sieger = "Münzwurf: " + teamLinks; speichereErgebnis(teamLinks, "unentschieden"); speichereErgebnis(teamRechts, "unentschieden"); }
     aktualisiereTabelle();
 
-    // Turnier-Logik Fortschritt
     if (gameSettings.tournament) {
         let match = tournamentMatches[currentMatchIndex];
         currentMatchIndex++;
-        if (currentMatchIndex === 1) tournamentMatches[1].t1 = sieger; // Ins Halbfinale
-        if (currentMatchIndex === 2) tournamentMatches[2].t1 = sieger; // Ins Finale
-        
+        if (currentMatchIndex === 1) tournamentMatches[1].t1 = sieger;
+        if (currentMatchIndex === 2) tournamentMatches[2].t1 = sieger;
         setTimeout(() => { zeigeTurnierBaum(); }, 3000);
     }
 }
@@ -336,9 +336,8 @@ function update() {
     if (!spielLaeuft) return;
     let jetzt = Date.now(); let dt = (jetzt - letzterFrame) / 1000; letzterFrame = jetzt;
 
-    // --- REPLAY LOGIK ---
     if (isReplay) {
-        replayFrame += 0.5; // Halbe Geschwindigkeit = Zeitlupe
+        replayFrame += 0.5;
         if (replayFrame >= replayBuffer.length) {
             isReplay = false;
             resetPositionen();
@@ -348,14 +347,13 @@ function update() {
             spieler1.x = snap.p1x; spieler1.y = snap.p1y; spieler1.stamina = snap.p1s; spieler1.isDashing = snap.p1d;
             spieler2.x = snap.p2x; spieler2.y = snap.p2y; spieler2.stamina = snap.p2s; spieler2.isDashing = snap.p2d;
         }
-        return; // Physik und Timer überspringen
+        return;
     }
 
     spielZeit -= dt; if (spielZeit <= 0) { spielZeit = 0; spielLaeuft = false; spielBeenden(); }
     let minuten = Math.floor(spielZeit / 60); let sekunden = Math.floor(spielZeit % 60);
     timerEl.innerText = minuten + ":" + (sekunden < 10 ? "0" : "") + sekunden;
     
-    // Snapshots für Replay speichern (180 Frames = ca. 3 Sekunden)
     replayBuffer.push({ bx: ball.x, by: ball.y, p1x: spieler1.x, p1y: spieler1.y, p1s: spieler1.stamina, p1d: spieler1.isDashing, p2x: spieler2.x, p2y: spieler2.y, p2s: spieler2.stamina, p2d: spieler2.isDashing });
     if (replayBuffer.length > 180) replayBuffer.shift();
 
@@ -389,15 +387,21 @@ function update() {
     spieler1.isDashing = (tasten[" "] || mobileDashActive) && spieler1.stamina > 0;
     spieler2.isDashing = (tasten["Shift"] || tasten["Enter"]) && spieler2.stamina > 0;
     
-    // WETTER: Matsch verlangsamt Spieler
-    let s1MudMod = 1; let s2MudMod = 1;
-    for(let m of mudPatches) {
-        if(Math.hypot(spieler1.x - m.x, spieler1.y - m.y) < m.r) s1MudMod = 0.5;
-        if(Math.hypot(spieler2.x - m.x, spieler2.y - m.y) < m.r) s2MudMod = 0.5;
+    // WETTER: Matsch oder tiefer Schnee verlangsamen die Spieler
+    let s1SpeedMod = 1; let s2SpeedMod = 1;
+    for(let patch of groundPatches) {
+        if(Math.hypot(spieler1.x - patch.x, spieler1.y - patch.y) < patch.r) {
+            if (patch.type === "mud") s1SpeedMod = 0.5;
+            if (patch.type === "snowpile") s1SpeedMod = 0.3; // Tiefer Schnee bremst stärker
+        }
+        if(Math.hypot(spieler2.x - patch.x, spieler2.y - patch.y) < patch.r) {
+            if (patch.type === "mud") s2SpeedMod = 0.5;
+            if (patch.type === "snowpile") s2SpeedMod = 0.3;
+        }
     }
 
-    let s1AktuelleSpeed = (spieler1.isDashing ? spieler1.baseSpeed * 2.5 : spieler1.baseSpeed) * s1MudMod;
-    let s2AktuelleSpeed = (spieler2.isDashing ? spieler2.baseSpeed * 2.5 : spieler2.baseSpeed) * s2MudMod;
+    let s1AktuelleSpeed = (spieler1.isDashing ? spieler1.baseSpeed * 2.5 : spieler1.baseSpeed) * s1SpeedMod;
+    let s2AktuelleSpeed = (spieler2.isDashing ? spieler2.baseSpeed * 2.5 : spieler2.baseSpeed) * s2SpeedMod;
 
     if (spieler1.isDashing) spieler1.stamina -= 2; else if (spieler1.stamina < 100) spieler1.stamina += 0.5;
     if (spieler2.isDashing) spieler2.stamina -= 2; else if (spieler2.stamina < 100) spieler2.stamina += 0.5;
@@ -437,8 +441,11 @@ function update() {
             spieler2.x += (pDx / pDistanz) * (pUeberlappung / 2); spieler2.y += (pDy / pDistanz) * (pUeberlappung / 2);
         }
 
-        // WETTER: Bei Regen weniger Reibung = schnellerer Ball
-        let friction = weatherIsRain ? 0.998 : 0.99;
+        // WETTER: Ball-Reibung dynamisch anpassen
+        let friction = 0.99; // Standard Sonne
+        if (weatherType === "rain") friction = 0.998; // Ball rutscht ewig
+        if (weatherType === "snow") friction = 0.97;  // Ball bleibt sofort stecken
+        
         ball.dx *= Math.pow(friction, 1/SUBSTEPS); ball.dy *= Math.pow(friction, 1/SUBSTEPS);
         
         let maxBallSpeed = (spieler1.radius * 2) + 10; let currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
@@ -498,15 +505,24 @@ function zeichneAlles() {
     ctx.save();
     if (screenShake > 0.5 && !isReplay) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.9; }
 
-    // WETTER: Dunklerer Rasen bei Regen
-    ctx.fillStyle = weatherIsRain ? "#246b43" : "#2e8b57"; 
+    // WETTER: Rasenfarbe anpassen
+    if (weatherType === "rain") ctx.fillStyle = "#246b43"; 
+    else if (weatherType === "snow") ctx.fillStyle = "#d1e8e2"; // Schneeweißes Grün
+    else ctx.fillStyle = "#2e8b57"; 
+    
     ctx.fillRect(0, 0, BREITE, HOEHE);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; for (let i = 0; i < BREITE; i += 100) ctx.fillRect(i, 0, 50, HOEHE);
+    
+    // Streifen (Bei Schnee ausblenden für glatte Optik)
+    if (weatherType !== "snow") {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; for (let i = 0; i < BREITE; i += 100) ctx.fillRect(i, 0, 50, HOEHE);
+    }
 
-    // WETTER: Matsch zeichnen
-    ctx.fillStyle = "rgba(60, 40, 20, 0.6)";
-    for(let m of mudPatches) {
-        ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI*2); ctx.fill();
+    // WETTER: Flecken zeichnen
+    for(let m of groundPatches) {
+        ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI*2);
+        if (m.type === "mud") ctx.fillStyle = "rgba(60, 40, 20, 0.6)";
+        if (m.type === "snowpile") ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        ctx.fill();
     }
 
     ctx.strokeStyle = "white"; ctx.lineWidth = 4;
@@ -533,13 +549,18 @@ function zeichneAlles() {
     zeichneSpielerMitAvatar(spieler1);
     zeichneSpielerMitAvatar(spieler2);
 
-    // WETTER: Regen Visualisierung
-    if (weatherIsRain) {
-        ctx.strokeStyle = "rgba(200,200,255,0.3)";
-        ctx.lineWidth = 1;
+    // WETTER: Atmosphäre (Tropfen oder Flocken)
+    if (weatherType === "rain") {
+        ctx.strokeStyle = "rgba(200,200,255,0.3)"; ctx.lineWidth = 1;
         for(let i=0; i<30; i++) {
             let rx = Math.random()*BREITE; let ry = Math.random()*HOEHE;
             ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx-5, ry+15); ctx.stroke();
+        }
+    } else if (weatherType === "snow") {
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        for(let i=0; i<40; i++) {
+            let rx = Math.random()*BREITE; let ry = Math.random()*HOEHE;
+            ctx.beginPath(); ctx.arc(rx, ry, Math.random()*2+1, 0, Math.PI*2); ctx.fill();
         }
     }
 

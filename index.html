@@ -86,15 +86,19 @@
             <div class="overlay-content">
                 <h2>Spieleinstellungen</h2>
                 <div class="setting-row">
-                    <label>🎥 Instant Replay (Zeitlupe nach Tor)</label>
+                    <label>🎥 Instant Replay</label>
                     <input type="checkbox" id="checkReplay" checked>
                 </div>
                 <div class="setting-row">
-                    <label>🌧️ Dynamisches Wetter (Regen & Matsch)</label>
-                    <input type="checkbox" id="checkWeather">
+                    <label>🌦️ Wetter</label>
+                    <select id="selectWeather" class="player-select" style="width: 150px; text-align: center;">
+                        <option value="sun">☀️ Sonnig</option>
+                        <option value="rain">🌧️ Regen</option>
+                        <option value="snow">❄️ Schnee</option>
+                    </select>
                 </div>
                 <div class="setting-row">
-                    <label>🏆 Turnier-Modus (K.O. System)</label>
+                    <label>🏆 Turnier-Modus</label>
                     <input type="checkbox" id="checkTournament">
                 </div>
                 <button id="btnCloseSettings">Speichern & Schließen</button>
