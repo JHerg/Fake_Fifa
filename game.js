@@ -57,7 +57,6 @@ const sprueche = {
         "Flutlicht an, der Ball rollt! Willkommen im Fußball-Tempel.",
         "Das ist die absolute Crème de la Crème. Wir erwarten ein packendes Duell!",
         "Die Stimmung ist atemberaubend! [PLAYER] macht sich bereit, es geht los.",
-        "Alles ist angerichtet. [PLAYER] blickt hochkonzentriert in Richtung gegnerisches Tor.",
         "Ein herrlicher Fußballabend beginnt. Da kribbelt es schon beim Zusehen!",
         "Taktisch wird das heute ein Leckerbissen. [TEAM_1] startet von links nach rechts."
     ],
@@ -71,13 +70,7 @@ const sprueche = {
         "[PLAYER] zieht das Tempo an! Jetzt muss es schnell gehen.",
         "Starke Übersicht von [PLAYER] in dieser Situation.",
         "[TEAM] lässt den Ball und den Gegner laufen.",
-        "[PLAYER] klebt der Ball am Fuß. Eine fantastische Technik.",
-        "Gefährlicher Vorstoß von [TEAM]! Die Defensive schwimmt.",
-        "[PLAYER] verzögert das Spiel geschickt.",
-        "Jetzt ist Platz für [PLAYER]! Was macht er draus?",
-        "[TEAM] spielt das jetzt ganz abgebrüht.",
-        "Da gewinnt [PLAYER] den wichtigen Zweikampf!",
-        "Starker Antritt von [PLAYER]."
+        "[PLAYER] klebt der Ball am Fuß. Eine fantastische Technik."
     ],
     schuss: [
         "Was für ein Strahl von [PLAYER]!",
@@ -99,7 +92,6 @@ const sprueche = {
         "Da zappelt das Ding im Netz! Klasse gemacht von [PLAYER].",
         "Der ist drin! Und wie! [PLAYER] bringt das Stadion zum Beben!",
         "Eiskalt vollstreckt von [PLAYER]! Neuer Spielstand: [SCORE_1] zu [SCORE_2]!",
-        "Das hat sich abgezeichnet! Die Fans flippen komplett aus!",
         "Wie hat er den denn gemacht?! [PLAYER], du Teufelskerl!"
     ],
     eigentor: [
@@ -138,21 +130,17 @@ const sprueche = {
     ende_sieg: [
         "Abpfiff! Das war's für heute. Ein spektakuläres Spiel mit [LEADER] als verdientem Sieger!",
         "Das Spiel ist aus. Ein wirklich toller Auftritt und ein Sieg für [LEADER].",
-        "Der Schiri beendet die Partie. [LEADER] gewinnt das Duell. Ein denkwürdiges Spiel!",
-        "Schluss, Aus, Vorbei! Die Fans von [LEADER] feiern ihre Mannschaft. Danke fürs Zuschauen!"
+        "Der Schiri beendet die Partie. [LEADER] gewinnt das Duell. Ein denkwürdiges Spiel!"
     ],
     ende_unentschieden: [
         "Abpfiff! Am Ende reicht es für keinen der beiden. Ein leistungsgerechtes Unentschieden.",
         "Das Spiel ist aus. Keiner konnte hier den finalen Stich setzen. Es bleibt beim Remis.",
-        "Der Schiedsrichter pfeift ab. Eine harte Schlacht endet ohne echten Sieger.",
-        "Schluss, Aus, Vorbei! [TEAM_1] und [TEAM_2] trennen sich unentschieden. Bis zum nächsten Mal!"
+        "Der Schiedsrichter pfeift ab. Eine harte Schlacht endet ohne echten Sieger."
     ]
 };
 
 function spreche(kategorie, playerObj) {
     if (!gameSettings.commentary || !soundEnabled) return;
-    
-    // Anti-Spam: Wenn er gerade spricht, unterdrücken wir unwichtige Sätze (Ballbesitz).
     if (kategorie === "besitz" && synth.speaking) return;
 
     let list = sprueche[kategorie]; if (!list) return;
@@ -163,19 +151,18 @@ function spreche(kategorie, playerObj) {
     if (playerObj) { spruch = spruch.replace(/\[PLAYER\]/g, playerObj.name).replace(/\[TEAM\]/g, playerObj.team); }
     spruch = spruch.replace(/\[TEAM_1\]/g, spieler1.team).replace(/\[TEAM_2\]/g, spieler2.team).replace(/\[SCORE_1\]/g, score.r).replace(/\[SCORE_2\]/g, score.b).replace(/\[LEADER\]/g, leader).replace(/\[TRAILER\]/g, trailer);
     
-    // Wichtige Ereignisse (Tore, Schüsse) unterbrechen aktuelles Gerede sofort
     if (!["besitz"].includes(kategorie)) synth.cancel();
     
     let utterThis = new SpeechSynthesisUtterance(spruch);
     utterThis.lang = 'de-DE'; utterThis.rate = 1.15;
-    if (gameSettings.voiceIndex !== "default" && availableVoices[gameSettings.voiceIndex]) { utterThis.voice = availableVoices[gameSettings.voiceIndex]; }
+    if (gameSettings.voiceIndex !== "default" && availableVoices[gameSettings.voiceIndex]) {
+        utterThis.voice = availableVoices[gameSettings.voiceIndex];
+    }
     synth.speak(utterThis);
 }
 
 document.getElementById("btnSound").addEventListener("click", function() {
-    soundEnabled = !soundEnabled;
-    this.innerText = soundEnabled ? "🔊" : "🔇";
-    initAudio();
+    soundEnabled = !soundEnabled; this.innerText = soundEnabled ? "🔊" : "🔇"; initAudio();
 });
 
 function initAudio() { 
@@ -192,20 +179,16 @@ function initAudio() {
     } 
 }
 
-// 3D SPATIAL AUDIO
 function playSound(type, xPos = BREITE/2) {
     if (!soundEnabled || !audioCtx) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
     
     const osc = audioCtx.createOscillator(); 
     const gainNode = audioCtx.createGain();
-    
     const panner = audioCtx.createStereoPanner();
     panner.pan.value = Math.max(-1, Math.min(1, (xPos - BREITE/2) / (BREITE/2))); 
     
-    osc.connect(gainNode); 
-    gainNode.connect(panner); 
-    panner.connect(audioCtx.destination);
+    osc.connect(gainNode); gainNode.connect(panner); panner.connect(audioCtx.destination);
     
     let now = audioCtx.currentTime;
     if (type === 'kick') { osc.type = 'sine'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.1); gainNode.gain.setValueAtTime(0.5, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); }
@@ -221,16 +204,17 @@ let heatmapData = []; let frameCounter = 0;
 function createExplosion(x, y, farbe) { for (let i = 0; i < 30; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 1.0, color: farbe, size: Math.random() * 5 + 2 }); }
 function createDust(x, y) { if (Math.random() > 0.5) particles.push({ x: x + (Math.random() - 0.5) * 10, y: y + (Math.random() - 0.5) * 10, vx: 0, vy: -1, life: 0.5, color: "rgba(255,255,255,0.4)", size: 3 }); }
 
+// --- SPIELFIGUREN (Ohne Ausdauer/Dash, dafür etwas schneller) ---
 let ball = { x: 500, y: 300, radius: 10, farbe: "white", dx: 0, dy: 0 };
-let spieler1 = { x: 100, y: 300, radius: 25, stamina: 100, isDashing: false, img: new Image(), name: "", team: "" };
-let spieler2 = { x: 900, y: 300, radius: 25, stamina: 100, isDashing: false, img: new Image(), name: "", team: "" };
+let spieler1 = { x: 100, y: 300, radius: 25, img: new Image(), name: "", team: "", baseSpeed: 7 };
+let spieler2 = { x: 900, y: 300, radius: 25, img: new Image(), name: "", team: "", baseSpeed: 7 };
 spieler1.img.crossOrigin = "anonymous"; spieler2.img.crossOrigin = "anonymous";
 
 let score = { r: 0, b: 0 }; let spielLaeuft = false; let spielZeit = 120; let isReplay = false; let replayBuffer = [];
 
-// --- KADER ---
-const teamFarben = { "Bayer Leverkusen": "#e32221", "FC Bayern": "#dc052d", "VfB Stuttgart": "#e32228", "Borussia Dortmund": "#fde100", "RB Leipzig": "#dd013f", "Eintracht Frankfurt": "#000000", "TSG Hoffenheim": "#0066b2", "1. FC Heidenheim": "#e2001a", "Werder Bremen": "#1d9053", "SC Freiburg": "#c0001f", "FC Augsburg": "#ba3733", "VfL Wolfsburg": "#65b32e", "Mainz 05": "#ed1c24", "Gladbach": "#1f1f1f", "Union Berlin": "#d4011d", "FC St. Pauli": "#533527", "Hamburger SV": "#005ca9", "1. FC Köln": "#ed1c24" };
-const teamKader = { "Bayer Leverkusen": ["Florian Wirtz", "Granit Xhaka", "Jeremie Frimpong"], "FC Bayern": ["Harry Kane", "Jamal Musiala", "Leroy Sané"], "VfB Stuttgart": ["Alexander Nübel", "Angelo Stiller", "Enzo Millot"], "Borussia Dortmund": ["Julian Brandt", "Nico Schlotterbeck", "Serhou Guirassy"], "RB Leipzig": ["Xavi Simons", "Lois Openda", "Benjamin Sesko"], "Eintracht Frankfurt": ["Omar Marmoush", "Hugo Ekitiké", "Mario Götze"], "TSG Hoffenheim": ["Andrej Kramaric", "Oliver Baumann", "Anton Stach"], "1. FC Heidenheim": ["Paul Wanner", "Marvin Pieringer", "Kevin Müller"], "Werder Bremen": ["Mitchell Weiser", "Romano Schmid", "Marvin Ducksch"], "SC Freiburg": ["Vincenzo Grifo", "Ritsu Doan", "Christian Günter"], "FC Augsburg": ["Phillip Tietz", "Finn Dahmen", "Arne Maier"], "VfL Wolfsburg": ["Maximilian Arnold", "Jonas Wind", "Lovro Majer"], "Mainz 05": ["Jonathan Burkardt", "Nadiem Amiri", "Robin Zentner"], "Gladbach": ["Tim Kleindienst", "Alassane Plea", "Franck Honorat"], "Union Berlin": ["Kevin Volland", "Christopher Trimmel", "Frederik Rönnow"], "FC St. Pauli": ["Jackson Irvine", "Johannes Eggestein", "Nikola Vasilj"], "Hamburger SV": ["Robert Glatzel", "Ludovit Reis", "Jonas Meffert"], "1. FC Köln": ["Florian Kainz", "Eric Martel", "Timo Hübers"] };
+// --- KADER (PES TRICK) ---
+const teamFarben = { "Rheinland Leverkusen": "#e32221", "FC Bavaria München": "#dc052d", "SC Schwaben Stuttgart": "#e32228", "SC Westfalen Dortmund": "#fde100", "Rasenclub Leipzig": "#dd013f", "SG Frankfurt": "#000000", "1899 Kraichgau": "#0066b2", "FC Ostalb Heidenheim": "#e2001a", "SV Weser Bremen": "#1d9053", "FC Breisgau": "#c0001f", "Schwaben Augsburg": "#ba3733", "Wölfe Niedersachsen": "#65b32e", "FSV Rheinhessen": "#ed1c24", "Borussia Niederrhein": "#1f1f1f", "SC Eisern Berlin": "#d4011d", "Kiezclub Hamburg": "#533527", "Hanseaten Hamburg": "#005ca9", "Domstadt Köln": "#ed1c24" };
+const teamKader = { "Rheinland Leverkusen": ["F. Wurz", "G. Chaka", "J. Frempong"], "FC Bavaria München": ["H. Caine", "J. Musiolo", "L. Zané"], "SC Schwaben Stuttgart": ["A. Nöbel", "A. Steller", "E. Milot"], "SC Westfalen Dortmund": ["J. Brondt", "N. Schlotter", "S. Girassi"], "Rasenclub Leipzig": ["X. Symons", "L. Oponda", "B. Sisko"], "SG Frankfurt": ["O. Marmosh", "H. Ekitoko", "M. Götzer"], "1899 Kraichgau": ["A. Kramarik", "O. Bumann", "A. Stoch"], "FC Ostalb Heidenheim": ["P. Wonnar", "M. Piringer", "K. Möller"], "SV Weser Bremen": ["M. Waiser", "R. Schmidt", "M. Dacksch"], "FC Breisgau": ["V. Grifa", "R. Doon", "C. Ginter"], "Schwaben Augsburg": ["P. Titz", "F. Darmen", "A. Mair"], "Wölfe Niedersachsen": ["M. Arnoldt", "J. Wint", "L. Majar"], "FSV Rheinhessen": ["J. Burkard", "N. Amari", "R. Zentnar"], "Borussia Niederrhein": ["T. Kleindinst", "A. Plia", "F. Honorot"], "SC Eisern Berlin": ["K. Vollandt", "C. Trommel", "F. Rönna"], "Kiezclub Hamburg": ["J. Irvin", "J. Eggestin", "N. Vasil"], "Hanseaten Hamburg": ["R. Glatzl", "L. Rais", "J. Maffert"], "Domstadt Köln": ["F. Keinz", "E. Martl", "T. Hobers"] };
 
 function updatePlayerUI() {
     let tL = document.getElementById("teamLeft").value; let tR = document.getElementById("teamRight").value;
@@ -249,7 +233,7 @@ document.getElementById("playerRight").onchange = () => { spieler2.name = docume
 updatePlayerUI();
 
 let currentAiMode = "human"; let aiTargetX = BREITE-100, aiTargetY = HOEHE/2, aiUpdateCounter = 0, aiLastX = BREITE-100, aiLastY = HOEHE/2, aiStuckFrames = 0, aiBallHistory = [];
-document.getElementById("aiSelect").addEventListener("change", () => { currentAiMode = document.getElementById("aiSelect").value; spieler2.baseSpeed = currentAiMode==="ai1"?3:currentAiMode==="ai2"?5:currentAiMode==="ai3"?7:5; });
+document.getElementById("aiSelect").addEventListener("change", () => { currentAiMode = document.getElementById("aiSelect").value; spieler2.baseSpeed = currentAiMode==="ai1"?5:currentAiMode==="ai2"?7:currentAiMode==="ai3"?9:7; });
 
 function speichereErgebnis(tName, typ) {
     let t = JSON.parse(localStorage.getItem('fifaTabelle')) || {};
@@ -274,13 +258,13 @@ canvas.addEventListener("mousemove", e => { let r = canvas.getBoundingClientRect
 canvas.addEventListener("touchstart", e => { e.preventDefault(); let r = canvas.getBoundingClientRect(); let t = e.touches[0]; mouseX = (t.clientX - r.left) * (BREITE / r.width); mouseY = (t.clientY - r.top) * (HOEHE / r.height) - 40; mouseActive = true; initAudio(); }, {passive: false});
 canvas.addEventListener("touchmove", e => { e.preventDefault(); let r = canvas.getBoundingClientRect(); let t = e.touches[0]; mouseX = (t.clientX - r.left) * (BREITE / r.width); mouseY = (t.clientY - r.top) * (HOEHE / r.height) - 40; }, {passive: false});
 
-let p1Gp = { x: 0, y: 0, d: false }; let p2Gp = { x: 0, y: 0, d: false };
+let p1Gp = { x: 0, y: 0 }; let p2Gp = { x: 0, y: 0 };
 function updateGps() {
-    p1Gp = {x: 0, y: 0, d: false}; p2Gp = {x: 0, y: 0, d: false};
+    p1Gp = {x: 0, y: 0}; p2Gp = {x: 0, y: 0};
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
     let v = []; for(let i = 0; i < gps.length; i++) { if(gps[i] && gps[i].connected) v.push(gps[i]); }
-    if (v[0]) { p1Gp.x = Math.abs(v[0].axes[0]) > 0.2 ? v[0].axes[0] : 0; p1Gp.y = Math.abs(v[0].axes[1]) > 0.2 ? v[0].axes[1] : 0; p1Gp.d = v[0].buttons[0].pressed || v[0].buttons[7].pressed; }
-    if (v[1]) { if (currentAiMode !== "human") { document.getElementById("aiSelect").value = "human"; document.getElementById("aiSelect").dispatchEvent(new Event('change')); } p2Gp.x = Math.abs(v[1].axes[0]) > 0.2 ? v[1].axes[0] : 0; p2Gp.y = Math.abs(v[1].axes[1]) > 0.2 ? v[1].axes[1] : 0; p2Gp.d = v[1].buttons[0].pressed || v[1].buttons[7].pressed; }
+    if (v[0]) { p1Gp.x = Math.abs(v[0].axes[0]) > 0.2 ? v[0].axes[0] : 0; p1Gp.y = Math.abs(v[0].axes[1]) > 0.2 ? v[0].axes[1] : 0; }
+    if (v[1]) { if (currentAiMode !== "human") { document.getElementById("aiSelect").value = "human"; document.getElementById("aiSelect").dispatchEvent(new Event('change')); } p2Gp.x = Math.abs(v[1].axes[0]) > 0.2 ? v[1].axes[0] : 0; p2Gp.y = Math.abs(v[1].axes[1]) > 0.2 ? v[1].axes[1] : 0; }
 }
 
 // --- WETTER & TURNIER ---
@@ -291,8 +275,9 @@ function initWeather() {
     else if (weatherType === "snow") { for (let i = 0; i < 6; i++) groundPatches.push({x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 30 + Math.random() * 40, type: "snowpile"}); }
 }
 function initTournament() {
-    let g = Object.keys(teamFarben).filter(t => t !== spieler1.team); g.sort(() => 0.5 - Math.random());
-    tournamentMatches = [ {t1: spieler1.team, t2: g[0], stage: "Viertelfinale"}, {t1: "Sieger VF", t2: g[1], stage: "Halbfinale"}, {t1: "Sieger HF", t2: g[2], stage: "Finale"} ];
+    let tL = document.getElementById("teamLeft").value;
+    let g = Object.keys(teamFarben).filter(t => t !== tL); g.sort(() => 0.5 - Math.random());
+    tournamentMatches = [ {t1: tL, t2: g[0], stage: "Viertelfinale"}, {t1: "Sieger VF", t2: g[1], stage: "Halbfinale"}, {t1: "Sieger HF", t2: g[2], stage: "Finale"} ];
     currentMatchIndex = 0; zeigeTurnierBaum();
 }
 function zeigeTurnierBaum() {
@@ -312,9 +297,8 @@ document.getElementById("btnNextMatch").addEventListener("click", () => {
 // --- SPIEL ABLAUF ---
 function resetPositionen() { 
     ball.x = BREITE / 2; ball.y = HOEHE / 2; ball.dx = 0; ball.dy = 0; 
-    spieler1.x = 100; spieler1.y = HOEHE / 2; spieler1.stamina = 100; 
-    spieler2.x = BREITE - 100; spieler2.y = HOEHE / 2; spieler2.stamina = 100; 
-    mouseActive = false; aiBallHistory = []; visualBallTrail = []; replayBuffer = []; lastTouchPlayer = null; 
+    spieler1.x = 100; spieler1.y = HOEHE / 2; spieler2.x = BREITE - 100; spieler2.y = HOEHE / 2; 
+    mouseActive = false; visualBallTrail = []; replayBuffer = []; lastTouchPlayer = null; 
 }
 
 function torGefallen(scoringTeam) {
@@ -377,6 +361,7 @@ function zeigeAnalytics() {
         hctx.beginPath(); hctx.arc(px, py, 20, 0, Math.PI*2); hctx.fill();
     });
     hctx.globalCompositeOperation = "source-over";
+
     document.getElementById("analytics-overlay").classList.remove("hidden");
 }
 
@@ -431,11 +416,12 @@ function update() {
     
     frameCounter++;
     if (frameCounter % 10 === 0) heatmapData.push({x: ball.x, y: ball.y});
+    if (lastTouchPlayer === spieler1) matchStats.p1Poss++; else if (lastTouchPlayer === spieler2) matchStats.p2Poss++;
     
     if (spielZeit <= 60 && !hasSpokenHalftime && Date.now() > torTextBis) { hasSpokenHalftime = true; if (score.r === score.b) spreche("halbzeit_unentschieden", null); else spreche("halbzeit_fuehrung", null); }
     if (spielZeit <= 20 && !hasSpokenEndgame && Date.now() > torTextBis) { hasSpokenEndgame = true; let diff = Math.abs(score.r - score.b); if (diff === 0) spreche("schlussphase_unentschieden", null); else if (diff <= 1) spreche("schlussphase_knapp", null); else spreche("schlussphase_deutlich", null); }
 
-    replayBuffer.push({ bx: ball.x, by: ball.y, p1x: spieler1.x, p1y: spieler1.y, p1s: spieler1.stamina, p1d: spieler1.isDashing, p2x: spieler2.x, p2y: spieler2.y, p2s: spieler2.stamina, p2d: spieler2.isDashing }); 
+    replayBuffer.push({ bx: ball.x, by: ball.y, p1x: spieler1.x, p1y: spieler1.y, p2x: spieler2.x, p2y: spieler2.y }); 
     if (replayBuffer.length > 180) replayBuffer.shift();
 
     let ballSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
@@ -462,17 +448,15 @@ function update() {
         }
     }
 
-    spieler1.isDashing = (tasten[" "] || p1Gp.d) && spieler1.stamina > 0;
-    spieler2.isDashing = (tasten["Shift"] || tasten["Enter"] || p2Gp.d) && spieler2.stamina > 0;
     let s1Mod = 1, s2Mod = 1;
     for (let p of groundPatches) { 
-        if (Math.hypot(spieler1.x - p.x, spieler1.y - p.y) < p.r) { s1Mod = p.type === "mud" ? 0.5 : 0.3; }
-        if (Math.hypot(spieler2.x - p.x, spieler2.y - p.y) < p.r) { s2Mod = p.type === "mud" ? 0.5 : 0.3; }
+        if (Math.hypot(spieler1.x - p.x, spieler1.y - p.y) < p.r) s1Mod = p.type === "mud" ? 0.5 : 0.3; 
+        if (Math.hypot(spieler2.x - p.x, spieler2.y - p.y) < p.r) s2Mod = p.type === "mud" ? 0.5 : 0.3; 
     }
     
-    let s1Spd = (spieler1.isDashing ? 12.5 : 5) * s1Mod; let s2Spd = (spieler2.isDashing ? 12.5 : 5) * s2Mod;
-    if (spieler1.isDashing) spieler1.stamina -= 2; else if (spieler1.stamina < 100) spieler1.stamina += 0.5;
-    if (spieler2.isDashing) spieler2.stamina -= 2; else if (spieler2.stamina < 100) spieler2.stamina += 0.5;
+    // Konstanter, leicht angehobener Speed (kein Dashing mehr)
+    let s1Spd = spieler1.baseSpeed * s1Mod; 
+    let s2Spd = spieler2.baseSpeed * s2Mod;
 
     const SS = 4;
     for (let s = 0; s < SS; s++) {
@@ -483,8 +467,9 @@ function update() {
             
             let dist1 = Math.hypot(dx1 * (s1Spd / SS), dy1 * (s1Spd / SS));
             if (mouseActive && mouseX !== null && mouseY !== null && dx1 === 0 && dy1 === 0) { 
-                let zielX = Math.max(spieler1.radius, Math.min(BREITE - spieler1.radius, mouseX)); let zielY = Math.max(spieler1.radius, Math.min(HOEHE - spieler1.radius, mouseY));
-                let folgeSpeed = spieler1.isDashing ? 0.3 : 0.1;
+                let zielX = Math.max(spieler1.radius, Math.min(BREITE - spieler1.radius, mouseX));
+                let zielY = Math.max(spieler1.radius, Math.min(HOEHE - spieler1.radius, mouseY));
+                let folgeSpeed = 0.2;
                 let moveX = (zielX - spieler1.x) * folgeSpeed; let moveY = (zielY - spieler1.y) * folgeSpeed;
                 spieler1.x += moveX; spieler1.y += moveY; 
                 matchStats.p1Dist += Math.hypot(moveX, moveY);
@@ -522,19 +507,17 @@ function update() {
             let adx = ball.x - p.x, ady = ball.y - p.y, ad = Math.hypot(adx, ady);
             if (ad < 35 && ad > 0) { 
                 ball.x = p.x + adx / ad * 35; ball.y = p.y + ady / ad * 35; 
-                let pk = p.isDashing ? 40 : 15; ball.dx += adx / ad * pk / SS; ball.dy += ady / ad * pk / SS; 
+                let pk = 30; // Konstante starke Schusskraft
+                ball.dx += adx / ad * pk / SS; ball.dy += ady / ad * pk / SS; 
                 
-                // Hier wurde die Schranke entfernt! Er spricht nun immer "besitz", wenn er frei ist.
                 if (lastTouchPlayer !== p) { 
                     lastTouchPlayer = p; 
-                    if (p === spieler1) matchStats.p1Poss++; else matchStats.p2Poss++;
-                    spreche("besitz", p); 
+                    if (Math.random() > 0.6) spreche("besitz", p); 
                 }
-                
-                if (pk === 40 && s === 0 && !isReplay) { 
+                if (s === 0 && !isReplay) { 
                     playSound('kick', ball.x); 
                     if (p === spieler1) matchStats.p1Shots++; else matchStats.p2Shots++; 
-                    spreche("schuss", p); // Schuss hat immer Prio!
+                    if (Math.random() > 0.4) spreche("schuss", p); 
                 }
             }
         });
@@ -605,7 +588,6 @@ function zeichneAlles() {
         ctx.save(); ctx.fillStyle = p.farbe; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.clip();
         if (p.img.complete) { ctx.drawImage(p.img, p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2); } ctx.restore();
         ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = "black"; ctx.fillRect(p.x - 16, p.y - 35, 32, 6); ctx.fillStyle = p.stamina > 20 ? "#00ff00" : "red"; ctx.fillRect(p.x - 15, p.y - 34, 30 * (p.stamina / 100), 4);
     });
 
     if (weatherType === "rain") { ctx.strokeStyle = "rgba(200, 200, 255, 0.2)"; for (let i = 0; i < 30; i++) { let rx = Math.random() * BREITE, ry = Math.random() * HOEHE; ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5, ry + 15); ctx.stroke(); } } 
@@ -624,7 +606,7 @@ function zeichneAlles() {
         v.addColorStop(0, "rgba(0, 0, 0, 0)"); v.addColorStop(1, "rgba(0, 0, 0, 0.6)");
         ctx.fillStyle = v; ctx.fillRect(-100, -100, BREITE+200, HOEHE+200);
     }
-    ctx.restore(); 
+    ctx.restore(); // Parallax Reset
 
     if (isReplay) { ctx.fillStyle = "gold"; ctx.font = "bold 40px Arial"; ctx.textAlign = "center"; ctx.fillText("🎥 REPLAY", BREITE / 2, 50); }
     if (Date.now() < torTextBis && !isReplay) { 
