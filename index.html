@@ -80,68 +80,47 @@
 
     <div id="game-wrapper">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
-        
         <div id="commentary-box" class="hidden">
             <span class="mic-icon">🎙️</span>
-            <span id="commentary-text">Herzlich Willkommen zum Topspiel!</span>
+            <span id="commentary-text"></span>
         </div>
 
         <div id="settings-panel" class="overlay hidden">
             <div class="overlay-content">
                 <h2>Spieleinstellungen</h2>
-                <div class="setting-row">
-                    <label>🎥 Instant Replay</label>
-                    <input type="checkbox" id="checkReplay" checked>
+                <div class="setting-row"><label>🎥 Replay</label><input type="checkbox" id="checkReplay" checked></div>
+                <div class="setting-row"><label>🌦️ Wetter</label><select id="selectWeather" class="player-select"><option value="sun">Sonne</option><option value="rain">Regen</option><option value="snow">Schnee</option></select></div>
+                <div class="setting-row"><label>🌗 Nacht</label><select id="selectTime" class="player-select"><option value="day">Tag</option><option value="night">Nacht</option></select></div>
+                <div class="setting-row"><label>🏆 Turnier</label><input type="checkbox" id="checkTournament"></div>
+                
+                <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 10px;">
+                    <div class="setting-row"><label>🎙️ Kommentar</label><input type="checkbox" id="checkCommentary" checked></div>
+                    <div class="setting-row">
+                        <label>🗣️ Stimme</label>
+                        <select id="selectVoice" class="player-select" style="max-width: 150px;">
+                            <option value="default">Standard</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="setting-row">
-                    <label>🌦️ Wetter</label>
-                    <select id="selectWeather" class="player-select" style="width: 150px; text-align: center;">
-                        <option value="sun">☀️ Sonnig</option>
-                        <option value="rain">🌧️ Regen</option>
-                        <option value="snow">❄️ Schnee</option>
-                    </select>
-                </div>
-                <div class="setting-row">
-                    <label>🌗 Tageszeit</label>
-                    <select id="selectTime" class="player-select" style="width: 150px; text-align: center;">
-                        <option value="day">☀️ Tag</option>
-                        <option value="night">🌙 Nacht</option>
-                    </select>
-                </div>
-                <div class="setting-row">
-                    <label>🏆 Turnier-Modus</label>
-                    <input type="checkbox" id="checkTournament">
-                </div>
-                <div class="setting-row" style="border-top: 1px solid #444; padding-top: 15px; margin-top: 10px;">
-                    <label>🎙️ Kommentator & Fans</label>
-                    <input type="checkbox" id="checkCommentary" checked>
-                </div>
-                <button id="btnCloseSettings" style="margin-top: 20px;">Speichern & Schließen</button>
+                
+                <button id="btnCloseSettings" style="margin-top: 15px;">Schließen & Speichern</button>
             </div>
         </div>
 
         <div id="tournament-overlay" class="overlay hidden">
             <div class="overlay-content">
-                <h2>🏆 Turnier-Baum</h2>
+                <h2>🏆 Turnier</h2>
                 <div id="bracket-container"></div>
-                <button id="btnNextMatch">Nächstes Spiel starten</button>
+                <button id="btnNextMatch">Nächstes Spiel</button>
             </div>
         </div>
     </div>
 
     <div id="tabelle-container">
-        <h2>Ewige Tabelle <span style="font-size: 14px; opacity: 0.5;">(🎮 Gamepad Support aktiv)</span></h2>
+        <h2>Ewige Tabelle</h2>
         <table id="leaderboard">
-            <thead>
-                <tr>
-                    <th>Team</th>
-                    <th>Siege</th>
-                    <th>Unentschieden</th>
-                    <th>Niederlagen</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboardBody">
-            </tbody>
+            <thead><tr><th>Team</th><th>S</th><th>U</th><th>N</th></tr></thead>
+            <tbody id="leaderboardBody"></tbody>
         </table>
     </div>
 

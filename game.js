@@ -4,53 +4,58 @@ const BREITE = canvas.width;
 const HOEHE = canvas.height;
 
 function passeCanvasAn() {
-    let fensterBreite = window.innerWidth; 
-    let fensterHoehe = window.innerHeight;
-    let verfuegbareHoehe = fensterHoehe - 220; 
-    let seitenVerhaeltnis = BREITE / HOEHE; 
-    let neueBreite = fensterBreite * 0.95; 
-    let neueHoehe = neueBreite / seitenVerhaeltnis;
-    
-    if (neueHoehe > verfuegbareHoehe) { 
-        neueHoehe = verfuegbareHoehe; 
-        neueBreite = neueHoehe * seitenVerhaeltnis; 
-    }
-    
-    canvas.style.width = neueBreite + "px"; 
-    canvas.style.height = neueHoehe + "px";
+    let fensterBreite = window.innerWidth; let fensterHoehe = window.innerHeight;
+    let verfuegbareHoehe = fensterHoehe - 220; let seitenVerhaeltnis = BREITE / HOEHE; 
+    let neueBreite = fensterBreite * 0.95; let neueHoehe = neueBreite / seitenVerhaeltnis;
+    if (neueHoehe > verfuegbareHoehe) { neueHoehe = verfuegbareHoehe; neueBreite = neueHoehe * seitenVerhaeltnis; }
+    canvas.style.width = neueBreite + "px"; canvas.style.height = neueHoehe + "px";
 }
-window.addEventListener("resize", passeCanvasAn); 
-passeCanvasAn();
+window.addEventListener("resize", passeCanvasAn); passeCanvasAn();
 
 // --- STATE & SETTINGS ---
-const gameSettings = { replay: true, weather: "sun", time: "day", tournament: false, commentary: true };
+const gameSettings = { replay: true, weather: "sun", time: "day", tournament: false, commentary: true, voiceIndex: "default" };
 
-document.getElementById("btnSettings").addEventListener("click", () => {
-    document.getElementById("settings-panel").classList.remove("hidden");
-});
+document.getElementById("btnSettings").addEventListener("click", () => document.getElementById("settings-panel").classList.remove("hidden"));
 document.getElementById("btnCloseSettings").addEventListener("click", () => {
     gameSettings.replay = document.getElementById("checkReplay").checked;
     gameSettings.weather = document.getElementById("selectWeather").value;
     gameSettings.time = document.getElementById("selectTime").value;
     gameSettings.tournament = document.getElementById("checkTournament").checked;
     gameSettings.commentary = document.getElementById("checkCommentary").checked;
+    gameSettings.voiceIndex = document.getElementById("selectVoice").value;
     document.getElementById("settings-panel").classList.add("hidden");
     initWeather();
 });
 
-// --- AUDIO & KOMMENTATOR SYSTEM ---
-let audioCtx = null;
-let soundEnabled = true;
-let crowdGainNode = null;
-
+// --- AUDIO, STIMMEN & KOMMENTATOR ---
+let audioCtx = null, soundEnabled = true, crowdGainNode = null;
 const synth = window.speechSynthesis;
 let commBox = document.getElementById("commentary-box");
 let commText = document.getElementById("commentary-text");
 let commTimeout = null;
 let lastTouchPlayer = null;
-
 let hasSpokenHalftime = false;
 let hasSpokenEndgame = false;
+let availableVoices = [];
+
+function loadVoices() {
+    let voices = synth.getVoices();
+    availableVoices = voices.filter(v => v.lang.includes('de'));
+    if(availableVoices.length === 0) availableVoices = voices;
+    let select = document.getElementById("selectVoice");
+    if (availableVoices.length > 0) {
+        select.innerHTML = "";
+        availableVoices.forEach((voice, index) => {
+            let option = document.createElement('option');
+            option.value = index;
+            let name = voice.name.replace('Microsoft ', '').replace('Google ', '');
+            option.textContent = name + (voice.localService ? '' : ' ☁️');
+            select.appendChild(option);
+        });
+    }
+}
+loadVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = loadVoices; }
 
 const sprueche = {
     start: [
@@ -129,16 +134,8 @@ function spreche(kategorie, playerObj) {
     let leader = score.r > score.b ? spieler1.team : (score.b > score.r ? spieler2.team : "niemand");
     let trailer = score.r < score.b ? spieler1.team : (score.b < score.r ? spieler2.team : "niemand");
 
-    if (playerObj) {
-        spruch = spruch.replace(/\[PLAYER\]/g, playerObj.name).replace(/\[TEAM\]/g, playerObj.team);
-    }
-    
-    spruch = spruch.replace(/\[TEAM_1\]/g, spieler1.team)
-                   .replace(/\[TEAM_2\]/g, spieler2.team)
-                   .replace(/\[SCORE_1\]/g, score.r)
-                   .replace(/\[SCORE_2\]/g, score.b)
-                   .replace(/\[LEADER\]/g, leader)
-                   .replace(/\[TRAILER\]/g, trailer);
+    if (playerObj) { spruch = spruch.replace(/\[PLAYER\]/g, playerObj.name).replace(/\[TEAM\]/g, playerObj.team); }
+    spruch = spruch.replace(/\[TEAM_1\]/g, spieler1.team).replace(/\[TEAM_2\]/g, spieler2.team).replace(/\[SCORE_1\]/g, score.r).replace(/\[SCORE_2\]/g, score.b).replace(/\[LEADER\]/g, leader).replace(/\[TRAILER\]/g, trailer);
     
     commText.innerText = spruch;
     commBox.classList.remove("hidden");
@@ -148,8 +145,10 @@ function spreche(kategorie, playerObj) {
     if (!["besitz"].includes(kategorie)) synth.cancel();
 
     let utterThis = new SpeechSynthesisUtterance(spruch);
-    utterThis.lang = 'de-DE'; 
-    utterThis.rate = 1.15;
+    utterThis.lang = 'de-DE'; utterThis.rate = 1.15;
+    if (gameSettings.voiceIndex !== "default" && availableVoices[gameSettings.voiceIndex]) {
+        utterThis.voice = availableVoices[gameSettings.voiceIndex];
+    }
     synth.speak(utterThis);
 }
 
@@ -163,26 +162,12 @@ function initAudio() {
     if (!audioCtx && soundEnabled) { 
         window.AudioContext = window.AudioContext || window.webkitAudioContext; 
         audioCtx = new window.AudioContext(); 
-        
-        let bufferSize = audioCtx.sampleRate * 2;
-        let noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        let output = noiseBuffer.getChannelData(0);
+        let bufferSize = audioCtx.sampleRate * 2; let noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); let output = noiseBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-
-        let noiseSource = audioCtx.createBufferSource();
-        noiseSource.buffer = noiseBuffer; 
-        noiseSource.loop = true;
-
-        let filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass'; 
-        filter.frequency.value = 400;
-
-        crowdGainNode = audioCtx.createGain(); 
-        crowdGainNode.gain.value = 0;
-        
-        noiseSource.connect(filter); 
-        filter.connect(crowdGainNode); 
-        crowdGainNode.connect(audioCtx.destination);
+        let noiseSource = audioCtx.createBufferSource(); noiseSource.buffer = noiseBuffer; noiseSource.loop = true;
+        let filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
+        crowdGainNode = audioCtx.createGain(); crowdGainNode.gain.value = 0;
+        noiseSource.connect(filter); filter.connect(crowdGainNode); crowdGainNode.connect(audioCtx.destination);
         noiseSource.start(0);
     } 
 }
@@ -190,271 +175,105 @@ function initAudio() {
 function playSound(type) {
     if (!soundEnabled || !audioCtx) return;
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator(); 
-    const gainNode = audioCtx.createGain();
-    osc.connect(gainNode); 
-    gainNode.connect(audioCtx.destination);
+    const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+    osc.connect(gainNode); gainNode.connect(audioCtx.destination);
     let now = audioCtx.currentTime;
-    
-    if (type === 'kick') { 
-        osc.type = 'sine'; 
-        osc.frequency.setValueAtTime(150, now); 
-        osc.frequency.exponentialRampToValueAtTime(40, now + 0.1); 
-        gainNode.gain.setValueAtTime(0.5, now); 
-        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); 
-        osc.start(now); 
-        osc.stop(now + 0.1); 
-    } else if (type === 'whistle') { 
-        osc.type = 'square'; 
-        osc.frequency.setValueAtTime(2000, now); 
-        osc.frequency.setValueAtTime(2200, now + 0.1); 
-        gainNode.gain.setValueAtTime(0.3, now); 
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.4); 
-        osc.start(now); 
-        osc.stop(now + 0.4); 
-    } else if (type === 'goal') { 
-        osc.type = 'triangle'; 
-        osc.frequency.setValueAtTime(300, now); 
-        osc.frequency.linearRampToValueAtTime(600, now + 0.5); 
-        gainNode.gain.setValueAtTime(0, now); 
-        gainNode.gain.linearRampToValueAtTime(0.5, now + 0.2); 
-        gainNode.gain.linearRampToValueAtTime(0, now + 1.5); 
-        osc.start(now); 
-        osc.stop(now + 1.5); 
-    }
+    if (type === 'kick') { osc.type = 'sine'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.1); gainNode.gain.setValueAtTime(0.5, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); }
+    else if (type === 'whistle') { osc.type = 'square'; osc.frequency.setValueAtTime(2000, now); osc.frequency.setValueAtTime(2200, now + 0.1); gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.4); osc.start(now); osc.stop(now + 0.4); }
+    else if (type === 'goal') { osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(600, now + 0.5); gainNode.gain.setValueAtTime(0, now); gainNode.gain.linearRampToValueAtTime(0.5, now + 0.2); gainNode.gain.linearRampToValueAtTime(0, now + 1.5); osc.start(now); osc.stop(now + 1.5); }
 }
 
-// --- VISUALS ---
-let particles = []; 
-let screenShake = 0; 
-let visualBallTrail = [];
+// --- VISUALS & SETUP ---
+let particles = []; let screenShake = 0; let visualBallTrail = [];
+function createExplosion(x, y, farbe) { for (let i = 0; i < 30; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 1.0, color: farbe, size: Math.random() * 5 + 2 }); }
+function createDust(x, y) { if (Math.random() > 0.5) particles.push({ x: x + (Math.random() - 0.5) * 10, y: y + (Math.random() - 0.5) * 10, vx: 0, vy: -1, life: 0.5, color: "rgba(255,255,255,0.4)", size: 3 }); }
 
-function createExplosion(x, y, farbe) { 
-    for (let i = 0; i < 30; i++) {
-        particles.push({ 
-            x: x, y: y, 
-            vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, 
-            life: 1.0, color: farbe, size: Math.random() * 5 + 2 
-        }); 
-    }
-}
-function createDust(x, y) { 
-    if (Math.random() > 0.5) {
-        particles.push({ 
-            x: x + (Math.random() - 0.5) * 10, y: y + (Math.random() - 0.5) * 10, 
-            vx: 0, vy: -1, life: 0.5, color: "rgba(255,255,255,0.4)", size: 3 
-        }); 
-    }
-}
-
-// --- SPIELFIGUREN ---
 let ball = { x: 500, y: 300, radius: 10, farbe: "white", dx: 0, dy: 0 };
 let spieler1 = { x: 100, y: 300, radius: 25, stamina: 100, isDashing: false, img: new Image(), name: "", team: "" };
 let spieler2 = { x: 900, y: 300, radius: 25, stamina: 100, isDashing: false, img: new Image(), name: "", team: "" };
-spieler1.img.crossOrigin = "anonymous"; 
-spieler2.img.crossOrigin = "anonymous";
+spieler1.img.crossOrigin = "anonymous"; spieler2.img.crossOrigin = "anonymous";
+let score = { r: 0, b: 0 }; let spielLaeuft = false; let spielZeit = 120; let isReplay = false; let replayBuffer = [];
 
-let score = { r: 0, b: 0 };
-let spielLaeuft = false;
-let spielZeit = 120;
-let isReplay = false;
-let replayBuffer = [];
-
-// --- INITIALISIERUNG & KADER ---
+// --- KADER ---
 const teamFarben = { "Bayer Leverkusen": "#e32221", "FC Bayern": "#dc052d", "VfB Stuttgart": "#e32228", "Borussia Dortmund": "#fde100", "RB Leipzig": "#dd013f", "Eintracht Frankfurt": "#000000", "TSG Hoffenheim": "#0066b2", "1. FC Heidenheim": "#e2001a", "Werder Bremen": "#1d9053", "SC Freiburg": "#c0001f", "FC Augsburg": "#ba3733", "VfL Wolfsburg": "#65b32e", "Mainz 05": "#ed1c24", "Gladbach": "#1f1f1f", "Union Berlin": "#d4011d", "FC St. Pauli": "#533527", "Hamburger SV": "#005ca9", "1. FC Köln": "#ed1c24" };
 const teamKader = { "Bayer Leverkusen": ["Florian Wirtz", "Granit Xhaka", "Jeremie Frimpong"], "FC Bayern": ["Harry Kane", "Jamal Musiala", "Leroy Sané"], "VfB Stuttgart": ["Alexander Nübel", "Angelo Stiller", "Enzo Millot"], "Borussia Dortmund": ["Julian Brandt", "Nico Schlotterbeck", "Serhou Guirassy"], "RB Leipzig": ["Xavi Simons", "Lois Openda", "Benjamin Sesko"], "Eintracht Frankfurt": ["Omar Marmoush", "Hugo Ekitiké", "Mario Götze"], "TSG Hoffenheim": ["Andrej Kramaric", "Oliver Baumann", "Anton Stach"], "1. FC Heidenheim": ["Paul Wanner", "Marvin Pieringer", "Kevin Müller"], "Werder Bremen": ["Mitchell Weiser", "Romano Schmid", "Marvin Ducksch"], "SC Freiburg": ["Vincenzo Grifo", "Ritsu Doan", "Christian Günter"], "FC Augsburg": ["Phillip Tietz", "Finn Dahmen", "Arne Maier"], "VfL Wolfsburg": ["Maximilian Arnold", "Jonas Wind", "Lovro Majer"], "Mainz 05": ["Jonathan Burkardt", "Nadiem Amiri", "Robin Zentner"], "Gladbach": ["Tim Kleindienst", "Alassane Plea", "Franck Honorat"], "Union Berlin": ["Kevin Volland", "Christopher Trimmel", "Frederik Rönnow"], "FC St. Pauli": ["Jackson Irvine", "Johannes Eggestein", "Nikola Vasilj"], "Hamburger SV": ["Robert Glatzel", "Ludovit Reis", "Jonas Meffert"], "1. FC Köln": ["Florian Kainz", "Eric Martel", "Timo Hübers"] };
 
 function updatePlayerUI() {
-    let tL = document.getElementById("teamLeft").value;
-    let tR = document.getElementById("teamRight").value;
-    
-    spieler1.team = tL; 
-    spieler2.team = tR;
-    spieler1.farbe = teamFarben[tL]; 
-    spieler2.farbe = teamFarben[tR];
-    
-    let pL = document.getElementById("playerLeft");
-    let pR = document.getElementById("playerRight");
-    
+    let tL = document.getElementById("teamLeft").value; let tR = document.getElementById("teamRight").value;
+    spieler1.team = tL; spieler2.team = tR; spieler1.farbe = teamFarben[tL]; spieler2.farbe = teamFarben[tR];
+    let pL = document.getElementById("playerLeft"); let pR = document.getElementById("playerRight");
     pL.innerHTML = teamKader[tL].map(n => `<option value="${n}">${n}</option>`).join("");
     pR.innerHTML = teamKader[tR].map(n => `<option value="${n}">${n}</option>`).join("");
-    
-    spieler1.name = pL.value; 
-    spieler2.name = pR.value;
+    spieler1.name = pL.value; spieler2.name = pR.value;
     spieler1.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler1.name}&backgroundColor=transparent`;
     spieler2.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler2.name}&backgroundColor=transparent`;
-    
-    document.getElementById("scoreRed").style.borderBottomColor = spieler1.farbe;
-    document.getElementById("scoreBlue").style.borderBottomColor = spieler2.farbe;
+    document.getElementById("scoreRed").style.borderBottomColor = spieler1.farbe; document.getElementById("scoreBlue").style.borderBottomColor = spieler2.farbe;
 }
-
-document.getElementById("teamLeft").onchange = updatePlayerUI; 
-document.getElementById("teamRight").onchange = updatePlayerUI;
-document.getElementById("playerLeft").onchange = () => { 
-    spieler1.name = document.getElementById("playerLeft").value; 
-    spieler1.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler1.name}&backgroundColor=transparent`; 
-};
-document.getElementById("playerRight").onchange = () => { 
-    spieler2.name = document.getElementById("playerRight").value; 
-    spieler2.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler2.name}&backgroundColor=transparent`; 
-};
-
+document.getElementById("teamLeft").onchange = updatePlayerUI; document.getElementById("teamRight").onchange = updatePlayerUI;
+document.getElementById("playerLeft").onchange = () => { spieler1.name = document.getElementById("playerLeft").value; spieler1.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler1.name}&backgroundColor=transparent`; };
+document.getElementById("playerRight").onchange = () => { spieler2.name = document.getElementById("playerRight").value; spieler2.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler2.name}&backgroundColor=transparent`; };
 updatePlayerUI();
 
-let currentAiMode = "human"; 
-let aiTargetX = BREITE - 100, aiTargetY = HOEHE / 2;
-let aiUpdateCounter = 0, aiLastX = BREITE - 100, aiLastY = HOEHE / 2, aiStuckFrames = 0;
-let aiBallHistory = [];
-
-document.getElementById("aiSelect").addEventListener("change", () => { 
-    currentAiMode = document.getElementById("aiSelect").value; 
-    spieler2.baseSpeed = currentAiMode === "ai1" ? 3 : currentAiMode === "ai2" ? 5 : currentAiMode === "ai3" ? 7 : 5; 
-});
+let currentAiMode = "human"; let aiTargetX = BREITE-100, aiTargetY = HOEHE/2, aiUpdateCounter = 0, aiLastX = BREITE-100, aiLastY = HOEHE/2, aiStuckFrames = 0, aiBallHistory = [];
+document.getElementById("aiSelect").addEventListener("change", () => { currentAiMode = document.getElementById("aiSelect").value; spieler2.baseSpeed = currentAiMode==="ai1"?3:currentAiMode==="ai2"?5:currentAiMode==="ai3"?7:5; });
 
 // --- TABELLE ---
 function speichereErgebnis(tName, typ) {
     let t = JSON.parse(localStorage.getItem('fifaTabelle')) || {};
     if (!t[tName]) t[tName] = { siege: 0, unentschieden: 0, niederlagen: 0 };
-    if (typ === "s") t[tName].siege++; 
-    if (typ === "u") t[tName].unentschieden++; 
-    if (typ === "n") t[tName].niederlagen++;
+    if (typ === "s") t[tName].siege++; if (typ === "u") t[tName].unentschieden++; if (typ === "n") t[tName].niederlagen++;
     localStorage.setItem('fifaTabelle', JSON.stringify(t));
 }
-
 function aktualisiereTabelle() {
     let t = JSON.parse(localStorage.getItem('fifaTabelle')) || {};
-    let b = document.getElementById("leaderboardBody"); 
-    b.innerHTML = "";
-    
-    let arr = []; 
-    for (let n in t) {
-        arr.push({name: n, stats: t[n], pts: (t[n].siege * 3) + t[n].unentschieden});
-    }
+    let b = document.getElementById("leaderboardBody"); b.innerHTML = "";
+    let arr = []; for (let n in t) { arr.push({name: n, stats: t[n], pts: (t[n].siege * 3) + t[n].unentschieden}); }
     arr.sort((x, y) => y.pts - x.pts);
-    
-    arr.forEach((m, i) => { 
-        let r = document.createElement("tr"); 
-        r.innerHTML = `<td><strong>${i+1}. ${m.name}</strong></td><td>${m.stats.siege}</td><td>${m.stats.unentschieden}</td><td>${m.stats.niederlagen}</td>`; 
-        b.appendChild(r); 
-    });
+    arr.forEach((m, i) => { let r = document.createElement("tr"); r.innerHTML = `<td><strong>${i+1}. ${m.name}</strong></td><td>${m.stats.siege}</td><td>${m.stats.unentschieden}</td><td>${m.stats.niederlagen}</td>`; b.appendChild(r); });
 }
 aktualisiereTabelle();
 
 // --- CONTROLS ---
-const tasten = {}; 
-let mouseX = null, mouseY = null, mouseActive = false;
-
-window.addEventListener("keydown", e => { 
-    tasten[e.key] = true; 
-    if (["w","a","s","d","W","A","S","D"].includes(e.key)) mouseActive = false; 
-    initAudio(); 
-});
+const tasten = {}; let mouseX = null, mouseY = null, mouseActive = false;
+window.addEventListener("keydown", e => { tasten[e.key] = true; if (["w","a","s","d","W","A","S","D"].includes(e.key)) mouseActive = false; initAudio(); });
 window.addEventListener("keyup", e => tasten[e.key] = false);
+canvas.addEventListener("mousemove", e => { let r = canvas.getBoundingClientRect(); mouseX = (e.clientX - r.left) * (BREITE / r.width); mouseY = (e.clientY - r.top) * (HOEHE / r.height); mouseActive = true; });
+canvas.addEventListener("touchstart", e => { e.preventDefault(); let r = canvas.getBoundingClientRect(); let t = e.touches[0]; mouseX = (t.clientX - r.left) * (BREITE / r.width); mouseY = (t.clientY - r.top) * (HOEHE / r.height) - 40; mouseActive = true; initAudio(); }, {passive: false});
+canvas.addEventListener("touchmove", e => { e.preventDefault(); let r = canvas.getBoundingClientRect(); let t = e.touches[0]; mouseX = (t.clientX - r.left) * (BREITE / r.width); mouseY = (t.clientY - r.top) * (HOEHE / r.height) - 40; }, {passive: false});
 
-canvas.addEventListener("mousemove", e => { 
-    let r = canvas.getBoundingClientRect(); 
-    mouseX = (e.clientX - r.left) * (BREITE / r.width); 
-    mouseY = (e.clientY - r.top) * (HOEHE / r.height); 
-    mouseActive = true; 
-});
-
-canvas.addEventListener("touchstart", e => { 
-    e.preventDefault(); 
-    let r = canvas.getBoundingClientRect(); 
-    let t = e.touches[0]; 
-    mouseX = (t.clientX - r.left) * (BREITE / r.width); 
-    mouseY = (t.clientY - r.top) * (HOEHE / r.height) - 40; 
-    mouseActive = true; 
-    initAudio(); 
-}, {passive: false});
-
-canvas.addEventListener("touchmove", e => { 
-    e.preventDefault(); 
-    let r = canvas.getBoundingClientRect(); 
-    let t = e.touches[0]; 
-    mouseX = (t.clientX - r.left) * (BREITE / r.width); 
-    mouseY = (t.clientY - r.top) * (HOEHE / r.height) - 40; 
-}, {passive: false});
-
-let p1Gp = { x: 0, y: 0, d: false };
-let p2Gp = { x: 0, y: 0, d: false };
-
+let p1Gp = { x: 0, y: 0, d: false }; let p2Gp = { x: 0, y: 0, d: false };
 function updateGps() {
-    p1Gp = {x: 0, y: 0, d: false}; 
-    p2Gp = {x: 0, y: 0, d: false};
-    
+    p1Gp = {x: 0, y: 0, d: false}; p2Gp = {x: 0, y: 0, d: false};
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
-    let v = []; 
-    for(let i = 0; i < gps.length; i++) {
-        if(gps[i] && gps[i].connected) v.push(gps[i]);
-    }
-    
-    if (v[0]) { 
-        p1Gp.x = Math.abs(v[0].axes[0]) > 0.2 ? v[0].axes[0] : 0; 
-        p1Gp.y = Math.abs(v[0].axes[1]) > 0.2 ? v[0].axes[1] : 0; 
-        p1Gp.d = v[0].buttons[0].pressed || v[0].buttons[7].pressed; 
-    }
-    if (v[1]) { 
-        if (currentAiMode !== "human") { 
-            document.getElementById("aiSelect").value = "human"; 
-            document.getElementById("aiSelect").dispatchEvent(new Event('change')); 
-        } 
-        p2Gp.x = Math.abs(v[1].axes[0]) > 0.2 ? v[1].axes[0] : 0; 
-        p2Gp.y = Math.abs(v[1].axes[1]) > 0.2 ? v[1].axes[1] : 0; 
-        p2Gp.d = v[1].buttons[0].pressed || v[1].buttons[7].pressed; 
-    }
+    let v = []; for(let i = 0; i < gps.length; i++) { if(gps[i] && gps[i].connected) v.push(gps[i]); }
+    if (v[0]) { p1Gp.x = Math.abs(v[0].axes[0]) > 0.2 ? v[0].axes[0] : 0; p1Gp.y = Math.abs(v[0].axes[1]) > 0.2 ? v[0].axes[1] : 0; p1Gp.d = v[0].buttons[0].pressed || v[0].buttons[7].pressed; }
+    if (v[1]) { if (currentAiMode !== "human") { document.getElementById("aiSelect").value = "human"; document.getElementById("aiSelect").dispatchEvent(new Event('change')); } p2Gp.x = Math.abs(v[1].axes[0]) > 0.2 ? v[1].axes[0] : 0; p2Gp.y = Math.abs(v[1].axes[1]) > 0.2 ? v[1].axes[1] : 0; p2Gp.d = v[1].buttons[0].pressed || v[1].buttons[7].pressed; }
 }
 
 // --- WETTER & TURNIER ---
-let weatherType = "sun";
-let groundPatches = [];
-let tournamentMatches = [];
-let currentMatchIndex = 0;
-let letzterFrame = Date.now();
-let spielEndeText = "";
-let torTextBis = 0;
-
+let weatherType = "sun"; let groundPatches = []; let tournamentMatches = []; let currentMatchIndex = 0; let letzterFrame = Date.now(); let spielEndeText = ""; let torTextBis = 0;
 function initWeather() {
-    groundPatches = []; 
-    weatherType = gameSettings.weather;
-    if (weatherType === "rain") {
-        for (let i = 0; i < 4; i++) groundPatches.push({x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50, type: "mud"});
-    } else if (weatherType === "snow") {
-        for (let i = 0; i < 6; i++) groundPatches.push({x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 30 + Math.random() * 40, type: "snowpile"});
-    }
+    groundPatches = []; weatherType = gameSettings.weather;
+    if (weatherType === "rain") { for (let i = 0; i < 4; i++) groundPatches.push({x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 40 + Math.random() * 50, type: "mud"}); } 
+    else if (weatherType === "snow") { for (let i = 0; i < 6; i++) groundPatches.push({x: Math.random() * BREITE, y: Math.random() * HOEHE, r: 30 + Math.random() * 40, type: "snowpile"}); }
 }
-
 function initTournament() {
-    let g = Object.keys(teamFarben).filter(t => t !== spieler1.team); 
-    g.sort(() => 0.5 - Math.random());
-    tournamentMatches = [
-        {t1: spieler1.team, t2: g[0], stage: "Viertelfinale"}, 
-        {t1: "Sieger VF", t2: g[1], stage: "Halbfinale"}, 
-        {t1: "Sieger HF", t2: g[2], stage: "Finale"}
-    ];
-    currentMatchIndex = 0; 
-    zeigeTurnierBaum();
+    let g = Object.keys(teamFarben).filter(t => t !== spieler1.team); g.sort(() => 0.5 - Math.random());
+    tournamentMatches = [ {t1: spieler1.team, t2: g[0], stage: "Viertelfinale"}, {t1: "Sieger VF", t2: g[1], stage: "Halbfinale"}, {t1: "Sieger HF", t2: g[2], stage: "Finale"} ];
+    currentMatchIndex = 0; zeigeTurnierBaum();
 }
-
 function zeigeTurnierBaum() {
-    let c = document.getElementById("bracket-container"); 
-    c.innerHTML = "";
+    let c = document.getElementById("bracket-container"); c.innerHTML = "";
     tournamentMatches.forEach((m, i) => { 
-        let d = document.createElement("div"); 
-        d.className = "bracket-match" + (i === currentMatchIndex ? " match-active" : ""); 
-        d.innerHTML = `<small>${m.stage}</small><br><strong>${m.t1}</strong><br>vs<br><strong>${m.t2}</strong>`; 
-        c.appendChild(d); 
+        let d = document.createElement("div"); d.className = "bracket-match" + (i === currentMatchIndex ? " match-active" : ""); d.innerHTML = `<small>${m.stage}</small><br><strong>${m.t1}</strong><br>vs<br><strong>${m.t2}</strong>`; c.appendChild(d); 
     });
     document.getElementById("tournament-overlay").classList.remove("hidden");
 }
-
 document.getElementById("btnNextMatch").addEventListener("click", () => {
     document.getElementById("tournament-overlay").classList.add("hidden");
     let match = tournamentMatches[currentMatchIndex];
-    document.getElementById("teamLeft").value = match.t1; 
-    document.getElementById("teamRight").value = match.t2;
-    updatePlayerUI(); 
-    startMatch();
+    document.getElementById("teamLeft").value = match.t1; document.getElementById("teamRight").value = match.t2;
+    updatePlayerUI(); startMatch();
 });
 
 // --- SPIEL ABLAUF ---
@@ -462,137 +281,48 @@ function resetPositionen() {
     ball.x = BREITE / 2; ball.y = HOEHE / 2; ball.dx = 0; ball.dy = 0; 
     spieler1.x = 100; spieler1.y = HOEHE / 2; spieler1.stamina = 100; 
     spieler2.x = BREITE - 100; spieler2.y = HOEHE / 2; spieler2.stamina = 100; 
-    mouseActive = false; 
-    aiBallHistory = []; 
-    visualBallTrail = []; 
-    replayBuffer = []; 
-    lastTouchPlayer = null; 
+    mouseActive = false; aiBallHistory = []; visualBallTrail = []; replayBuffer = []; lastTouchPlayer = null; 
 }
-
 function torGefallen(scoringTeam) {
-    let isEigentor = false; 
-    let scorer = scoringTeam === "rot" ? spieler1 : spieler2; 
-    let loser = scoringTeam === "rot" ? spieler2 : spieler1;
-    
-    if (lastTouchPlayer === loser) { 
-        isEigentor = true; 
-        scorer = loser; 
-    }
-
-    if (scoringTeam === "rot") { 
-        score.r++; 
-        document.getElementById("scoreRed").innerText = score.r; 
-        createExplosion(BREITE - 10, HOEHE / 2, spieler1.farbe); 
-    } else { 
-        score.b++; 
-        document.getElementById("scoreBlue").innerText = score.b; 
-        createExplosion(10, HOEHE / 2, spieler2.farbe); 
-    }
-    
-    playSound('goal'); 
-    screenShake = 15; 
-    
-    if (isEigentor) {
-        spreche("eigentor", scorer); 
-    } else {
-        spreche("tor", scorer);
-    }
-    
+    let isEigentor = false; let scorer = scoringTeam === "rot" ? spieler1 : spieler2; let loser = scoringTeam === "rot" ? spieler2 : spieler1;
+    if (lastTouchPlayer === loser) { isEigentor = true; scorer = loser; }
+    if (scoringTeam === "rot") { score.r++; document.getElementById("scoreRed").innerText = score.r; createExplosion(BREITE - 10, HOEHE / 2, spieler1.farbe); } 
+    else { score.b++; document.getElementById("scoreBlue").innerText = score.b; createExplosion(10, HOEHE / 2, spieler2.farbe); }
+    playSound('goal'); screenShake = 15; 
+    if (isEigentor) { spreche("eigentor", scorer); } else { spreche("tor", scorer); }
     if (crowdGainNode && gameSettings.commentary) crowdGainNode.gain.value = 0.8;
-
-    if (gameSettings.replay && replayBuffer.length > 30) { 
-        isReplay = true; 
-        replayFrame = 0; 
-        torTextBis = Date.now() + 5000; 
-    } else { 
-        torTextBis = Date.now() + 2000; 
-        resetPositionen(); 
-    }
+    if (gameSettings.replay && replayBuffer.length > 30) { isReplay = true; replayFrame = 0; torTextBis = Date.now() + 5000; } 
+    else { torTextBis = Date.now() + 2000; resetPositionen(); }
 }
-
-document.getElementById("btnStart").addEventListener("click", () => { 
-    initAudio(); 
-    if (gameSettings.tournament) initTournament(); 
-    else startMatch(); 
-});
-
+document.getElementById("btnStart").addEventListener("click", () => { initAudio(); if (gameSettings.tournament) initTournament(); else startMatch(); });
 function startMatch() { 
-    playSound('whistle'); 
-    score.r = 0; score.b = 0; 
-    document.getElementById("scoreRed").innerText = "0"; 
-    document.getElementById("scoreBlue").innerText = "0"; 
-    spielZeit = 120; 
-    document.getElementById("timerDisplay").innerText = "2:00"; 
-    
-    hasSpokenHalftime = false; 
-    hasSpokenEndgame = false; 
-    isReplay = false;
-    
-    initWeather(); 
-    resetPositionen(); 
-    aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; 
-    letzterFrame = Date.now(); 
-    spielLaeuft = true; 
-    
+    playSound('whistle'); score.r = 0; score.b = 0; document.getElementById("scoreRed").innerText = "0"; document.getElementById("scoreBlue").innerText = "0"; 
+    spielZeit = 120; document.getElementById("timerDisplay").innerText = "2:00"; 
+    hasSpokenHalftime = false; hasSpokenEndgame = false; isReplay = false;
+    initWeather(); resetPositionen(); aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true; 
     spreche("start", spieler1);
 }
-
 function spielBeenden() {
-    spielLaeuft = false; 
-    playSound('whistle'); 
-    let win = score.r > score.b; 
-    if (score.r === score.b) win = Math.random() > 0.5;
-    
+    spielLaeuft = false; playSound('whistle'); 
+    let win = score.r > score.b; if (score.r === score.b) win = Math.random() > 0.5;
     spreche("ende", win ? spieler1 : spieler2);
-    
-    if (win) { 
-        speichereErgebnis(spieler1.team, "s"); 
-        speichereErgebnis(spieler2.team, "n"); 
-    } else { 
-        speichereErgebnis(spieler2.team, "s"); 
-        speichereErgebnis(spieler1.team, "n"); 
-    }
+    if (win) { speichereErgebnis(spieler1.team, "s"); speichereErgebnis(spieler2.team, "n"); } 
+    else { speichereErgebnis(spieler2.team, "s"); speichereErgebnis(spieler1.team, "n"); }
     aktualisiereTabelle();
-
     if (gameSettings.tournament) {
-        if (win) { 
-            currentMatchIndex++; 
-            if (currentMatchIndex < 3) { 
-                tournamentMatches[currentMatchIndex].t1 = spieler1.team; 
-                setTimeout(zeigeTurnierBaum, 3000); 
-            } else {
-                setTimeout(() => { 
-                    alert("🏆 TURNIER GEWONNEN! 🏆"); 
-                    document.getElementById("checkTournament").checked = false; 
-                    gameSettings.tournament = false; 
-                }, 1500); 
-            }
-        } else {
-            setTimeout(() => { 
-                alert("❌ AUSGESCHIEDEN!"); 
-                document.getElementById("checkTournament").checked = false; 
-                gameSettings.tournament = false; 
-            }, 1500);
-        }
+        if (win) { currentMatchIndex++; if (currentMatchIndex < 3) { tournamentMatches[currentMatchIndex].t1 = spieler1.team; setTimeout(zeigeTurnierBaum, 3000); } else { setTimeout(() => { alert("🏆 TURNIER GEWONNEN! 🏆"); document.getElementById("checkTournament").checked = false; gameSettings.tournament = false; }, 1500); } } 
+        else { setTimeout(() => { alert("❌ AUSGESCHIEDEN!"); document.getElementById("checkTournament").checked = false; gameSettings.tournament = false; }, 1500); }
     }
 }
 
 // --- UPDATE ---
 function update() {
-    if (!spielLaeuft) { 
-        if (crowdGainNode) crowdGainNode.gain.value *= 0.95; 
-        return; 
-    }
-    
-    let j = Date.now(); 
-    let dt = (j - letzterFrame) / 1000; 
-    letzterFrame = j;
-    
+    if (!spielLaeuft) { if (crowdGainNode) crowdGainNode.gain.value *= 0.95; return; }
+    let j = Date.now(); let dt = (j - letzterFrame) / 1000; letzterFrame = j;
     updateGps();
     
     if (crowdGainNode && gameSettings.commentary && !isReplay) {
-        let tv = 0.05; 
-        let distTor = Math.min(Math.abs(ball.x - 0), Math.abs(ball.x - BREITE));
+        let tv = 0.05; let distTor = Math.min(Math.abs(ball.x - 0), Math.abs(ball.x - BREITE));
         if (distTor < 300) tv += (300 - distTor) / 1000;
         tv += Math.min(Math.hypot(ball.dx, ball.dy) / 50, 0.3);
         crowdGainNode.gain.value += (tv - crowdGainNode.gain.value) * 0.05;
@@ -601,45 +331,18 @@ function update() {
     if (isReplay) { 
         if (crowdGainNode) crowdGainNode.gain.value *= 0.95;
         replayFrame += 0.5; 
-        if (replayFrame >= replayBuffer.length) { 
-            isReplay = false; 
-            resetPositionen(); 
-        } else { 
-            let s = replayBuffer[Math.floor(replayFrame)]; 
-            ball.x = s.bx; ball.y = s.by; 
-            spieler1.x = s.p1x; spieler1.y = s.p1y; 
-            spieler2.x = s.p2x; spieler2.y = s.p2y; 
-        } 
+        if (replayFrame >= replayBuffer.length) { isReplay = false; resetPositionen(); } 
+        else { let s = replayBuffer[Math.floor(replayFrame)]; ball.x = s.bx; ball.y = s.by; spieler1.x = s.p1x; spieler1.y = s.p1y; spieler2.x = s.p2x; spieler2.y = s.p2y; } 
         return; 
     }
     
-    spielZeit -= dt; 
-    if (spielZeit <= 0) { 
-        spielZeit = 0; 
-        spielBeenden(); 
-    }
-    
+    spielZeit -= dt; if (spielZeit <= 0) { spielZeit = 0; spielBeenden(); }
     document.getElementById("timerDisplay").innerText = Math.floor(spielZeit / 60) + ":" + (Math.floor(spielZeit % 60) < 10 ? "0" : "") + Math.floor(spielZeit % 60);
     
-    // ZEIT-KOMMENTARE
-    if (spielZeit <= 60 && !hasSpokenHalftime && Date.now() > torTextBis) {
-        hasSpokenHalftime = true;
-        if (score.r === score.b) spreche("halbzeit_unentschieden", null);
-        else spreche("halbzeit_fuehrung", null);
-    }
-    if (spielZeit <= 20 && !hasSpokenEndgame && Date.now() > torTextBis) {
-        hasSpokenEndgame = true;
-        let diff = Math.abs(score.r - score.b);
-        if (diff === 0) spreche("schlussphase_unentschieden", null);
-        else if (diff <= 1) spreche("schlussphase_knapp", null);
-        else spreche("schlussphase_deutlich", null);
-    }
+    if (spielZeit <= 60 && !hasSpokenHalftime && Date.now() > torTextBis) { hasSpokenHalftime = true; if (score.r === score.b) spreche("halbzeit_unentschieden", null); else spreche("halbzeit_fuehrung", null); }
+    if (spielZeit <= 20 && !hasSpokenEndgame && Date.now() > torTextBis) { hasSpokenEndgame = true; let diff = Math.abs(score.r - score.b); if (diff === 0) spreche("schlussphase_unentschieden", null); else if (diff <= 1) spreche("schlussphase_knapp", null); else spreche("schlussphase_deutlich", null); }
 
-    replayBuffer.push({
-        bx: ball.x, by: ball.y, 
-        p1x: spieler1.x, p1y: spieler1.y, p1s: spieler1.stamina, p1d: spieler1.isDashing, 
-        p2x: spieler2.x, p2y: spieler2.y, p2s: spieler2.stamina, p2d: spieler2.isDashing
-    }); 
+    replayBuffer.push({ bx: ball.x, by: ball.y, p1x: spieler1.x, p1y: spieler1.y, p1s: spieler1.stamina, p1d: spieler1.isDashing, p2x: spieler2.x, p2y: spieler2.y, p2s: spieler2.stamina, p2d: spieler2.isDashing }); 
     if (replayBuffer.length > 180) replayBuffer.shift();
 
     let ballSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
@@ -647,38 +350,21 @@ function update() {
     if (visualBallTrail.length > 10) visualBallTrail.shift();
     for (let t of visualBallTrail) t.alpha -= 0.05;
 
-    aiBallHistory.push({ x: ball.x, y: ball.y }); 
-    if (aiBallHistory.length > 6) aiBallHistory.shift();
+    aiBallHistory.push({ x: ball.x, y: ball.y }); if (aiBallHistory.length > 6) aiBallHistory.shift();
     let delayedBall = aiBallHistory[0] || ball;
 
     if (currentAiMode !== "human") {
         aiUpdateCounter++; 
         if (aiUpdateCounter >= 10) { 
-            aiUpdateCounter = 0; 
-            let distMoved = Math.hypot(spieler2.x - aiLastX, spieler2.y - aiLastY); 
-            
-            if (distMoved < 5) aiStuckFrames += 10; 
-            else aiStuckFrames = 0; 
-            
-            aiLastX = spieler2.x; 
-            aiLastY = spieler2.y; 
-            
-            if (aiStuckFrames >= 60) { 
-                aiTargetX = BREITE / 2; aiTargetY = HOEHE / 2; 
-                if (aiStuckFrames >= 90) aiStuckFrames = 0; 
-            } else { 
-                if (currentAiMode === "ai1") { 
-                    aiTargetX = BREITE - 100; 
-                    aiTargetY = ball.x > BREITE / 2 ? ball.y : HOEHE / 2; 
-                } else if (currentAiMode === "ai2") { 
-                    aiTargetX = ball.x > BREITE / 2 ? ball.x : BREITE / 2 + 100; 
-                    aiTargetY = ball.y; 
-                } else { 
-                    aiTargetX = delayedBall.x + 20; 
-                    aiTargetY = delayedBall.y; 
-                } 
-                aiTargetX = Math.max(40, Math.min(BREITE - 40, aiTargetX)); 
-                aiTargetY = Math.max(40, Math.min(HOEHE - 40, aiTargetY)); 
+            aiUpdateCounter = 0; let distMoved = Math.hypot(spieler2.x - aiLastX, spieler2.y - aiLastY); 
+            if (distMoved < 5) aiStuckFrames += 10; else aiStuckFrames = 0; 
+            aiLastX = spieler2.x; aiLastY = spieler2.y; 
+            if (aiStuckFrames >= 60) { aiTargetX = BREITE / 2; aiTargetY = HOEHE / 2; if (aiStuckFrames >= 90) aiStuckFrames = 0; } 
+            else { 
+                if (currentAiMode === "ai1") { aiTargetX = BREITE - 100; aiTargetY = ball.x > BREITE / 2 ? ball.y : HOEHE / 2; } 
+                else if (currentAiMode === "ai2") { aiTargetX = ball.x > BREITE / 2 ? ball.x : BREITE / 2 + 100; aiTargetY = ball.y; } 
+                else { aiTargetX = delayedBall.x + 20; aiTargetY = delayedBall.y; } 
+                aiTargetX = Math.max(40, Math.min(BREITE - 40, aiTargetX)); aiTargetY = Math.max(40, Math.min(HOEHE - 40, aiTargetY)); 
             } 
         }
     }
@@ -688,17 +374,11 @@ function update() {
     
     let s1Mod = 1, s2Mod = 1;
     for (let p of groundPatches) { 
-        if (Math.hypot(spieler1.x - p.x, spieler1.y - p.y) < p.r) {
-            s1Mod = p.type === "mud" ? 0.5 : 0.3; 
-        }
-        if (Math.hypot(spieler2.x - p.x, spieler2.y - p.y) < p.r) {
-            s2Mod = p.type === "mud" ? 0.5 : 0.3; 
-        }
+        if (Math.hypot(spieler1.x - p.x, spieler1.y - p.y) < p.r) { s1Mod = p.type === "mud" ? 0.5 : 0.3; }
+        if (Math.hypot(spieler2.x - p.x, spieler2.y - p.y) < p.r) { s2Mod = p.type === "mud" ? 0.5 : 0.3; }
     }
     
-    let s1Spd = (spieler1.isDashing ? 12.5 : 5) * s1Mod;
-    let s2Spd = (spieler2.isDashing ? 12.5 : 5) * s2Mod;
-    
+    let s1Spd = (spieler1.isDashing ? 12.5 : 5) * s1Mod; let s2Spd = (spieler2.isDashing ? 12.5 : 5) * s2Mod;
     if (spieler1.isDashing) spieler1.stamina -= 2; else if (spieler1.stamina < 100) spieler1.stamina += 0.5;
     if (spieler2.isDashing) spieler2.stamina -= 2; else if (spieler2.stamina < 100) spieler2.stamina += 0.5;
 
@@ -706,140 +386,65 @@ function update() {
     for (let s = 0; s < SS; s++) {
         if (Date.now() > torTextBis) {
             let dx1 = 0, dy1 = 0; 
-            if (tasten["w"]) dy1--; if (tasten["s"]) dy1++; 
-            if (tasten["a"]) dx1--; if (tasten["d"]) dx1++;
-            
-            if (p1Gp.x || p1Gp.y) { 
-                dx1 = p1Gp.x; dy1 = p1Gp.y; 
-            } else if (dx1 || dy1) { 
-                let l = Math.hypot(dx1, dy1); 
-                dx1 /= l; dy1 /= l; 
-            }
-            
+            if (tasten["w"]) dy1--; if (tasten["s"]) dy1++; if (tasten["a"]) dx1--; if (tasten["d"]) dx1++;
+            if (p1Gp.x || p1Gp.y) { dx1 = p1Gp.x; dy1 = p1Gp.y; } else if (dx1 || dy1) { let l = Math.hypot(dx1, dy1); dx1 /= l; dy1 /= l; }
             if (mouseActive && mouseX !== null && mouseY !== null && dx1 === 0 && dy1 === 0) { 
-                let zielX = Math.max(spieler1.radius, Math.min(BREITE - spieler1.radius, mouseX));
-                let zielY = Math.max(spieler1.radius, Math.min(HOEHE - spieler1.radius, mouseY));
-                let folgeSpeed = spieler1.isDashing ? 0.3 : 0.1;
-                spieler1.x += (zielX - spieler1.x) * folgeSpeed; 
-                spieler1.y += (zielY - spieler1.y) * folgeSpeed; 
-            } else { 
-                spieler1.x += dx1 * (s1Spd / SS); 
-                spieler1.y += dy1 * (s1Spd / SS); 
-            }
+                let zielX = Math.max(spieler1.radius, Math.min(BREITE - spieler1.radius, mouseX)); let zielY = Math.max(spieler1.radius, Math.min(HOEHE - spieler1.radius, mouseY));
+                let folgeSpeed = spieler1.isDashing ? 0.3 : 0.1; spieler1.x += (zielX - spieler1.x) * folgeSpeed; spieler1.y += (zielY - spieler1.y) * folgeSpeed; 
+            } else { spieler1.x += dx1 * (s1Spd / SS); spieler1.y += dy1 * (s1Spd / SS); }
 
             if (currentAiMode === "human") {
                 let dx2 = 0, dy2 = 0; 
-                if (tasten["ArrowUp"]) dy2--; if (tasten["ArrowDown"]) dy2++; 
-                if (tasten["ArrowLeft"]) dx2--; if (tasten["ArrowRight"]) dx2++;
-                
-                if (p2Gp.x || p2Gp.y) { 
-                    dx2 = p2Gp.x; dy2 = p2Gp.y; 
-                } else if (dx2 || dy2) { 
-                    let l = Math.hypot(dx2, dy2); 
-                    dx2 /= l; dy2 /= l; 
-                }
-                spieler2.x += dx2 * (s2Spd / SS); 
-                spieler2.y += dy2 * (s2Spd / SS);
-            } else { 
-                let dx = aiTargetX - spieler2.x, dy = aiTargetY - spieler2.y, d = Math.hypot(dx, dy); 
-                if (d > 0) { 
-                    spieler2.x += dx / d * Math.min(s2Spd / SS, d); 
-                    spieler2.y += dy / d * Math.min(s2Spd / SS, d); 
-                } 
-            }
+                if (tasten["ArrowUp"]) dy2--; if (tasten["ArrowDown"]) dy2++; if (tasten["ArrowLeft"]) dx2--; if (tasten["ArrowRight"]) dx2++;
+                if (p2Gp.x || p2Gp.y) { dx2 = p2Gp.x; dy2 = p2Gp.y; } else if (dx2 || dy2) { let l = Math.hypot(dx2, dy2); dx2 /= l; dy2 /= l; }
+                spieler2.x += dx2 * (s2Spd / SS); spieler2.y += dy2 * (s2Spd / SS);
+            } else { let dx = aiTargetX - spieler2.x, dy = aiTargetY - spieler2.y, d = Math.hypot(dx, dy); if (d > 0) { spieler2.x += dx / d * Math.min(s2Spd / SS, d); spieler2.y += dy / d * Math.min(s2Spd / SS, d); } }
         }
         
-        spieler1.x = Math.max(25, Math.min(BREITE - 25, spieler1.x)); 
-        spieler1.y = Math.max(25, Math.min(HOEHE - 25, spieler1.y));
-        spieler2.x = Math.max(25, Math.min(BREITE - 25, spieler2.x)); 
-        spieler2.y = Math.max(25, Math.min(HOEHE - 25, spieler2.y));
-        
+        spieler1.x = Math.max(25, Math.min(BREITE - 25, spieler1.x)); spieler1.y = Math.max(25, Math.min(HOEHE - 25, spieler1.y));
+        spieler2.x = Math.max(25, Math.min(BREITE - 25, spieler2.x)); spieler2.y = Math.max(25, Math.min(HOEHE - 25, spieler2.y));
         let pdx = spieler2.x - spieler1.x, pdy = spieler2.y - spieler1.y, pd = Math.hypot(pdx, pdy); 
-        if (pd < 50 && pd > 0) { 
-            spieler1.x -= pdx / pd * (50 - pd) / 2; 
-            spieler1.y -= pdy / pd * (50 - pd) / 2; 
-            spieler2.x += pdx / pd * (50 - pd) / 2; 
-            spieler2.y += pdy / pd * (50 - pd) / 2; 
-        }
+        if (pd < 50 && pd > 0) { spieler1.x -= pdx / pd * (50 - pd) / 2; spieler1.y -= pdy / pd * (50 - pd) / 2; spieler2.x += pdx / pd * (50 - pd) / 2; spieler2.y += pdy / pd * (50 - pd) / 2; }
         
         let f = weatherType === "rain" ? 0.998 : weatherType === "snow" ? 0.97 : 0.99;
-        ball.dx *= Math.pow(f, 1 / SS); 
-        ball.dy *= Math.pow(f, 1 / SS);
-        ball.x += ball.dx / SS; 
-        ball.y += ball.dy / SS;
+        ball.dx *= Math.pow(f, 1 / SS); ball.dy *= Math.pow(f, 1 / SS);
+        ball.x += ball.dx / SS; ball.y += ball.dy / SS;
         
         [spieler1, spieler2].forEach(p => {
             let adx = ball.x - p.x, ady = ball.y - p.y, ad = Math.hypot(adx, ady);
             if (ad < 35 && ad > 0) { 
-                ball.x = p.x + adx / ad * 35; 
-                ball.y = p.y + ady / ad * 35; 
-                let pk = p.isDashing ? 40 : 15; 
-                ball.dx += adx / ad * pk / SS; 
-                ball.dy += ady / ad * pk / SS; 
-                
-                if (lastTouchPlayer !== p) { 
-                    lastTouchPlayer = p; 
-                    if (Math.random() > 0.6) spreche("besitz", p); 
-                }
-                if (pk === 40 && s === 0 && !isReplay) { 
-                    playSound('kick'); 
-                    if (Math.random() > 0.4) spreche("schuss", p); 
-                }
+                ball.x = p.x + adx / ad * 35; ball.y = p.y + ady / ad * 35; 
+                let pk = p.isDashing ? 40 : 15; ball.dx += adx / ad * pk / SS; ball.dy += ady / ad * pk / SS; 
+                if (lastTouchPlayer !== p) { lastTouchPlayer = p; if (Math.random() > 0.6) spreche("besitz", p); }
+                if (pk === 40 && s === 0 && !isReplay) { playSound('kick'); if (Math.random() > 0.4) spreche("schuss", p); }
             }
         });
         
         if (ball.y < 10) { ball.y = 10; ball.dy = Math.abs(ball.dy); } 
         if (ball.y > HOEHE - 10) { ball.y = HOEHE - 10; ball.dy = -Math.abs(ball.dy); }
-        
-        if (ball.x < 10) { 
-            if (ball.y > 240 && ball.y < 360) { torGefallen("blau"); return; } 
-            else { ball.x = 10; ball.dx = Math.abs(ball.dx); } 
-        }
-        if (ball.x > BREITE - 10) { 
-            if (ball.y > 240 && ball.y < 360) { torGefallen("rot"); return; } 
-            else { ball.x = BREITE - 10; ball.dx = -Math.abs(ball.dx); } 
-        }
+        if (ball.x < 10) { if (ball.y > 240 && ball.y < 360) { torGefallen("blau"); return; } else { ball.x = 10; ball.dx = Math.abs(ball.dx); } }
+        if (ball.x > BREITE - 10) { if (ball.y > 240 && ball.y < 360) { torGefallen("rot"); return; } else { ball.x = BREITE - 10; ball.dx = -Math.abs(ball.dx); } }
     }
     
-    for (let i = particles.length - 1; i >= 0; i--) { 
-        particles[i].x += particles[i].vx; 
-        particles[i].y += particles[i].vy; 
-        particles[i].life -= 0.02; 
-        if (particles[i].life <= 0) particles.splice(i, 1); 
-    }
+    for (let i = particles.length - 1; i >= 0; i--) { particles[i].x += particles[i].vx; particles[i].y += particles[i].vy; particles[i].life -= 0.02; if (particles[i].life <= 0) particles.splice(i, 1); }
 }
 
 // --- ZEICHNEN ---
 function zeichneAlles() {
     ctx.save();
-    if (screenShake > 0.5 && !isReplay) { 
-        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); 
-        screenShake *= 0.9; 
-    }
+    if (screenShake > 0.5 && !isReplay) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.9; }
 
     ctx.fillStyle = weatherType === "rain" ? "#246b43" : weatherType === "snow" ? "#d1e8e2" : "#2e8b57";
     ctx.fillRect(0, 0, BREITE, HOEHE);
 
-    if (weatherType !== "snow") { 
-        ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; 
-        for (let i = 0; i < BREITE; i += 100) ctx.fillRect(i, 0, 50, HOEHE); 
-    }
-    
-    groundPatches.forEach(p => { 
-        ctx.beginPath(); 
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); 
-        ctx.fillStyle = p.type === "mud" ? "rgba(60, 40, 20, 0.6)" : "rgba(255, 255, 255, 0.8)"; 
-        ctx.fill(); 
-    });
+    if (weatherType !== "snow") { ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; for (let i = 0; i < BREITE; i += 100) ctx.fillRect(i, 0, 50, HOEHE); }
+    groundPatches.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.type === "mud" ? "rgba(60, 40, 20, 0.6)" : "rgba(255, 255, 255, 0.8)"; ctx.fill(); });
 
-    ctx.strokeStyle = "white"; 
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = "white"; ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, BREITE - 4, HOEHE - 4);
     ctx.beginPath(); ctx.moveTo(BREITE / 2, 0); ctx.lineTo(BREITE / 2, HOEHE); ctx.stroke();
     ctx.beginPath(); ctx.arc(BREITE / 2, HOEHE / 2, 60, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = "white"; 
-    ctx.fillRect(0, 240, 10, 120); 
-    ctx.fillRect(BREITE - 10, 240, 10, 120);
+    ctx.fillStyle = "white"; ctx.fillRect(0, 240, 10, 120); ctx.fillRect(BREITE - 10, 240, 10, 120);
 
     const isNight = gameSettings.time === "night";
     const lights = [{x: 0, y: 0}, {x: BREITE, y: 0}, {x: 0, y: HOEHE}, {x: BREITE, y: HOEHE}];
@@ -849,121 +454,53 @@ function zeichneAlles() {
             lights.forEach(l => {
                 let dx = obj.x - l.x, dy = obj.y - l.y, dist = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
                 let shadowLen = Math.min(dist * 0.12, 60);
-                ctx.save(); 
-                ctx.translate(obj.x, obj.y); 
-                ctx.rotate(ang);
+                ctx.save(); ctx.translate(obj.x, obj.y); ctx.rotate(ang);
                 ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-                ctx.beginPath(); 
-                ctx.ellipse(shadowLen / 2 + obj.radius * 0.3, 0, shadowLen, obj.radius * 0.6, 0, 0, Math.PI * 2); 
-                ctx.fill();
+                ctx.beginPath(); ctx.ellipse(shadowLen / 2 + obj.radius * 0.3, 0, shadowLen, obj.radius * 0.6, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.restore();
             });
-        } else { 
-            ctx.fillStyle = "rgba(0, 0, 0, 0.2)"; 
-            ctx.beginPath(); 
-            ctx.arc(obj.x + 4, obj.y + 4, obj.radius, 0, Math.PI * 2); 
-            ctx.fill(); 
-        }
+        } else { ctx.fillStyle = "rgba(0, 0, 0, 0.2)"; ctx.beginPath(); ctx.arc(obj.x + 4, obj.y + 4, obj.radius, 0, Math.PI * 2); ctx.fill(); }
     };
     [ball, spieler1, spieler2].forEach(drawShadow);
 
-    particles.forEach(p => { 
-        ctx.globalAlpha = p.life; 
-        ctx.fillStyle = p.color; 
-        ctx.beginPath(); 
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); 
-        ctx.fill(); 
-    }); 
-    ctx.globalAlpha = 1.0;
-    
-    ctx.fillStyle = "white"; 
-    ctx.beginPath(); 
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); 
-    ctx.fill();
+    particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }); ctx.globalAlpha = 1.0;
+    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2); ctx.fill();
 
     [spieler1, spieler2].forEach(p => {
-        ctx.save(); 
-        ctx.fillStyle = p.farbe; 
-        ctx.beginPath(); 
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); 
-        ctx.fill(); 
-        ctx.beginPath(); 
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); 
-        ctx.clip();
-        if (p.img.complete) {
-            ctx.drawImage(p.img, p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2); 
-        }
-        ctx.restore();
-        ctx.strokeStyle = "white"; 
-        ctx.lineWidth = 2; 
-        ctx.beginPath(); 
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); 
-        ctx.stroke();
-        ctx.fillStyle = "black"; 
-        ctx.fillRect(p.x - 16, p.y - 35, 32, 6); 
-        ctx.fillStyle = p.stamina > 20 ? "#00ff00" : "red"; 
-        ctx.fillRect(p.x - 15, p.y - 34, 30 * (p.stamina / 100), 4);
+        ctx.save(); ctx.fillStyle = p.farbe; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.clip();
+        if (p.img.complete) { ctx.drawImage(p.img, p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2); } ctx.restore();
+        ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "black"; ctx.fillRect(p.x - 16, p.y - 35, 32, 6); ctx.fillStyle = p.stamina > 20 ? "#00ff00" : "red"; ctx.fillRect(p.x - 15, p.y - 34, 30 * (p.stamina / 100), 4);
     });
 
-    if (weatherType === "rain") { 
-        ctx.strokeStyle = "rgba(200, 200, 255, 0.2)"; 
-        for (let i = 0; i < 30; i++) { 
-            let rx = Math.random() * BREITE, ry = Math.random() * HOEHE; 
-            ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5, ry + 15); ctx.stroke(); 
-        } 
-    } else if (weatherType === "snow") { 
-        ctx.fillStyle = "white"; 
-        for (let i = 0; i < 40; i++) { 
-            ctx.beginPath(); ctx.arc(Math.random() * BREITE, Math.random() * HOEHE, 2, 0, Math.PI * 2); ctx.fill(); 
-        } 
-    }
+    if (weatherType === "rain") { ctx.strokeStyle = "rgba(200, 200, 255, 0.2)"; for (let i = 0; i < 30; i++) { let rx = Math.random() * BREITE, ry = Math.random() * HOEHE; ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5, ry + 15); ctx.stroke(); } } 
+    else if (weatherType === "snow") { ctx.fillStyle = "white"; for (let i = 0; i < 40; i++) { ctx.beginPath(); ctx.arc(Math.random() * BREITE, Math.random() * HOEHE, 2, 0, Math.PI * 2); ctx.fill(); } }
 
     if (isNight && !isReplay) {
-        ctx.fillStyle = "rgba(10, 15, 30, 0.4)"; 
-        ctx.fillRect(0, 0, BREITE, HOEHE);
-        
+        ctx.fillStyle = "rgba(10, 15, 30, 0.4)"; ctx.fillRect(0, 0, BREITE, HOEHE);
         ctx.globalCompositeOperation = "screen"; 
         lights.forEach(l => {
             let g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, 500);
-            g.addColorStop(0, "rgba(255, 255, 230, 0.4)"); 
-            g.addColorStop(1, "rgba(255, 255, 255, 0)");   
-            ctx.fillStyle = g;
-            ctx.fillRect(0, 0, BREITE, HOEHE);
+            g.addColorStop(0, "rgba(255, 255, 230, 0.4)"); g.addColorStop(1, "rgba(255, 255, 255, 0)");   
+            ctx.fillStyle = g; ctx.fillRect(0, 0, BREITE, HOEHE);
         });
-        
         ctx.globalCompositeOperation = "source-over"; 
         let v = ctx.createRadialGradient(BREITE / 2, HOEHE / 2, 100, BREITE / 2, HOEHE / 2, 600);
-        v.addColorStop(0, "rgba(0, 0, 0, 0)");
-        v.addColorStop(1, "rgba(0, 0, 0, 0.6)");
-        ctx.fillStyle = v;
-        ctx.fillRect(0, 0, BREITE, HOEHE);
+        v.addColorStop(0, "rgba(0, 0, 0, 0)"); v.addColorStop(1, "rgba(0, 0, 0, 0.6)");
+        ctx.fillStyle = v; ctx.fillRect(0, 0, BREITE, HOEHE);
     }
     ctx.restore();
 
-    if (isReplay) { 
-        ctx.fillStyle = "gold"; ctx.font = "bold 40px Arial"; ctx.textAlign = "center"; 
-        ctx.fillText("🎥 REPLAY", BREITE / 2, 50); 
-    }
-    
+    if (isReplay) { ctx.fillStyle = "gold"; ctx.font = "bold 40px Arial"; ctx.textAlign = "center"; ctx.fillText("🎥 REPLAY", BREITE / 2, 50); }
     if (Date.now() < torTextBis && !isReplay) { 
-        let t = "TOOOOR!";
-        ctx.fillStyle = "gold"; ctx.font = "bold 80px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(t, BREITE / 2, HOEHE / 2); 
-        ctx.strokeStyle = "black"; ctx.lineWidth = 4; 
-        ctx.strokeText(t, BREITE / 2, HOEHE / 2); 
+        let t = "TOOOOR!"; ctx.fillStyle = "gold"; ctx.font = "bold 80px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(t, BREITE / 2, HOEHE / 2); ctx.strokeStyle = "black"; ctx.lineWidth = 4; ctx.strokeText(t, BREITE / 2, HOEHE / 2); 
     }
-    
     if (!spielLaeuft && !isReplay) { 
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; 
-        ctx.fillRect(0, 0, BREITE, HOEHE); 
-        ctx.fillStyle = "white"; ctx.font = "bold 50px Arial"; ctx.textAlign = "center"; 
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; ctx.fillRect(0, 0, BREITE, HOEHE); ctx.fillStyle = "white"; ctx.font = "bold 50px Arial"; ctx.textAlign = "center"; 
         ctx.fillText(spielEndeText || "Klicke auf 'Spiel starten'", BREITE / 2, HOEHE / 2); 
     }
 }
 
-function loop() { 
-    update(); 
-    zeichneAlles(); 
-    requestAnimationFrame(loop); 
-}
+function loop() { update(); zeichneAlles(); requestAnimationFrame(loop); }
 loop();
