@@ -97,6 +97,13 @@
                     </select>
                 </div>
                 <div class="setting-row">
+                    <label>🌗 Tageszeit (Flutlicht)</label>
+                    <select id="selectTime" class="player-select" style="width: 150px; text-align: center;">
+                        <option value="day">☀️ Tag</option>
+                        <option value="night">🌙 Nacht</option>
+                    </select>
+                </div>
+                <div class="setting-row">
                     <label>🏆 Turnier-Modus</label>
                     <input type="checkbox" id="checkTournament">
                 </div>
@@ -114,7 +121,7 @@
     </div>
 
     <div id="tabelle-container">
-        <h2>Ewige Tabelle</h2>
+        <h2>Ewige Tabelle <span style="font-size: 14px; opacity: 0.5;">(🎮 Gamepad Support aktiv)</span></h2>
         <table id="leaderboard">
             <thead>
                 <tr>
