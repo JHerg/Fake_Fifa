@@ -80,10 +80,6 @@
 
     <div id="game-wrapper">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
-        <div id="commentary-box" class="hidden">
-            <span class="mic-icon">🎙️</span>
-            <span id="commentary-text"></span>
-        </div>
 
         <div id="settings-panel" class="overlay hidden">
             <div class="overlay-content">
@@ -102,8 +98,35 @@
                         </select>
                     </div>
                 </div>
+                <button id="btnCloseSettings" style="margin-top: 15px;">Schließen</button>
+            </div>
+        </div>
+
+        <div id="analytics-overlay" class="overlay hidden">
+            <div class="analytics-content">
+                <h2 class="magenta-line">Match Analytics</h2>
                 
-                <button id="btnCloseSettings" style="margin-top: 15px;">Schließen & Speichern</button>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <h3>Ballbesitz</h3>
+                        <p><span style="color:#B40055" id="statPoss1">50%</span> - <span style="color:#004BA0" id="statPoss2">50%</span></p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Torschüsse</h3>
+                        <p><span style="color:#B40055" id="statShots1">0</span> - <span style="color:#004BA0" id="statShots2">0</span></p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Laufdistanz</h3>
+                        <p><span style="color:#B40055" id="statDist1">0m</span> - <span style="color:#004BA0" id="statDist2">0m</span></p>
+                    </div>
+                </div>
+
+                <div class="heatmap-container">
+                    <h3>Heatmap (Ballbewegung)</h3>
+                    <canvas id="heatmapCanvas" width="600" height="360"></canvas>
+                </div>
+
+                <button id="btnCloseAnalytics" class="btn-primary">Zur Ewigen Tabelle</button>
             </div>
         </div>
 
@@ -117,7 +140,7 @@
     </div>
 
     <div id="tabelle-container">
-        <h2>Ewige Tabelle <span style="font-size: 14px; opacity: 0.5;">(🎮 Gamepad Support aktiv)</span></h2>
+        <h2>Ewige Tabelle <span style="font-size: 14px; opacity: 0.5;">(🎮 Gamepad & 3D Audio aktiv)</span></h2>
         <table id="leaderboard">
             <thead><tr><th>Team</th><th>S</th><th>U</th><th>N</th></tr></thead>
             <tbody id="leaderboardBody"></tbody>
