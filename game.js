@@ -97,6 +97,10 @@ let ball = { x: BREITE / 2, y: HOEHE / 2, radius: 10, farbe: "white", dx: 0, dy:
 let spieler1 = { x: 100, y: HOEHE / 2, radius: 25, farbe: "#ff4d4d", baseSpeed: 5, stamina: 100, isDashing: false, img: new Image() };
 let spieler2 = { x: BREITE - 100, y: HOEHE / 2, radius: 25, farbe: "#4da6ff", baseSpeed: 5, stamina: 100, isDashing: false, img: new Image() };
 
+// Wichtig für iPhone: CrossOrigin erlauben, damit Bilder gezeichnet werden dürfen
+spieler1.img.crossOrigin = "anonymous";
+spieler2.img.crossOrigin = "anonymous";
+
 // --- TEAMS UND ALLE SPIELER-KADER DER SAISON 25/26 ---
 const teamFarben = {
     "Bayer Leverkusen": "#e32221", "FC Bayern": "#dc052d", "VfB Stuttgart": "#e32228",
@@ -148,8 +152,10 @@ function updateTeamUndBilder() {
     spieler2.farbe = teamFarben[teamRightSelect.value];
     scoreRedEl.style.backgroundColor = spieler1.farbe;
     scoreBlueEl.style.backgroundColor = spieler2.farbe;
-    spieler1.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${playerLeftSelect.value}&backgroundColor=transparent`;
-    spieler2.img.src = `https://api.dicebear.com/8.x/notionists/svg?seed=${playerRightSelect.value}&backgroundColor=transparent`;
+    
+    // FIX FÜR IPHONE: Wir nutzen /png statt /svg, das ist deutlich sicherer für mobile Browser!
+    spieler1.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${playerLeftSelect.value}&backgroundColor=transparent`;
+    spieler2.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${playerRightSelect.value}&backgroundColor=transparent`;
 }
 
 teamLeftSelect.addEventListener("change", () => { updatePlayerDropdowns(); updateTeamUndBilder(); });
@@ -174,11 +180,19 @@ window.addEventListener("keyup", function(event) { tasten[event.key] = false; })
 canvas.addEventListener("mousemove", function(event) {
     let rect = canvas.getBoundingClientRect(); mouseX = (event.clientX - rect.left) * (canvas.width / rect.width); mouseY = (event.clientY - rect.top) * (canvas.height / rect.height); mouseActive = true;
 });
+
+// FIX FÜR TOUCH-STEUERUNG
 function handleTouch(event) {
-    event.preventDefault(); let rect = canvas.getBoundingClientRect(); let touch = event.touches[0];
-    mouseX = (touch.clientX - rect.left) * (canvas.width / rect.width); mouseY = ((touch.clientY - rect.top) * (canvas.height / rect.height)) - 40; mouseActive = true; initAudio();
+    event.preventDefault(); 
+    let rect = canvas.getBoundingClientRect(); 
+    let touch = event.touches[0];
+    mouseX = (touch.clientX - rect.left) * (canvas.width / rect.width); 
+    mouseY = ((touch.clientY - rect.top) * (canvas.height / rect.height)) - 40; 
+    mouseActive = true; 
+    initAudio();
 }
-canvas.addEventListener("touchstart", handleTouch, { passive: false }); canvas.addEventListener("touchmove", handleTouch, { passive: false });
+canvas.addEventListener("touchstart", handleTouch, { passive: false }); 
+canvas.addEventListener("touchmove", handleTouch, { passive: false });
 
 // --- SYSTEM VARIABLEN (WETTER, REPLAY, TURNIER) ---
 let weatherType = "sun";
@@ -197,11 +211,9 @@ function initWeather() {
 }
 
 function initTournament() {
-    // 1. Alle verfügbaren Gegner finden und zufällig mischen
     let alleGegner = Object.keys(teamFarben).filter(t => t !== teamLeftSelect.value);
     alleGegner.sort(() => 0.5 - Math.random()); 
 
-    // 2. Den kompletten Baum im Voraus festlegen (damit es immer einen Gegner gibt!)
     tournamentMatches = [
         { t1: teamLeftSelect.value, t2: alleGegner[0], stage: "Viertelfinale" },
         { t1: "Sieger Viertelfinale", t2: alleGegner[1], stage: "Halbfinale" },
@@ -263,7 +275,6 @@ function startMatch() {
     aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true;
 }
 
-// --- SPIELENDE & TURNIER-FORTSCHRITT ---
 function spielBeenden() {
     playSound('whistle'); 
     let teamLinks = teamLeftSelect.value; let teamRechts = teamRightSelect.value;
@@ -286,7 +297,6 @@ function spielBeenden() {
         if (spielerHatGewonnen) {
             currentMatchIndex++;
             if (currentMatchIndex < 3) {
-                // Spieler rückt vor, Name wird ins nächste Match eingetragen
                 tournamentMatches[currentMatchIndex].t1 = teamLinks;
                 setTimeout(() => { zeigeTurnierBaum(); }, 3000);
             } else {
