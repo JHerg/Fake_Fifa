@@ -52,26 +52,33 @@ if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoicescha
 // --- WOLFF FUSS / EPIC KOMMENTATOR WORTSCHATZ ---
 const sprueche = {
     start: [
-        "Guten Abend allerseits! Schnallen Sie sich an, das hier wird ein Fest.",
+        "Ein herzliches Willkommen, liebe Fußballfreunde! [TEAM_1] empfängt heute [TEAM_2]. Das wird ein Fußball-Fest!",
+        "Hallo aus der Kommentatorenkabine! Wolff Fuss hier am Mikrofon! Ich freue mich auf die Partie zwischen [TEAM_1] und [TEAM_2].",
+        "Guten Abend allerseits! Schnallen Sie sich an, [TEAM_1] trifft auf [TEAM_2]. Das hier wird ein echtes Spektakel.",
         "Der Schiedsrichter gibt die Partie frei! [TEAM_1] gegen [TEAM_2], Fußballherz, was willst du mehr?",
-        "Flutlicht an, der Ball rollt! Willkommen im Fußball-Tempel.",
-        "Das ist die absolute Crème de la Crème. Wir erwarten ein packendes Duell!",
-        "Die Stimmung ist atemberaubend! [PLAYER] macht sich bereit, es geht los.",
-        "Ein herrlicher Fußballabend beginnt. Da kribbelt es schon beim Zusehen!",
-        "Taktisch wird das heute ein Leckerbissen. [TEAM_1] startet von links nach rechts.",
-        "Die Ränge sind bis auf den letzten Platz gefüllt. Ein Fußballfest steht uns bevor!",
-        "Ein herzliches Hallo aus der Kommentatorenkabine! [TEAM_1] gegen [TEAM_2], das ist Musik in meinen Ohren.",
-        "Die Akteure sind heiß wie Frittenfett. [PLAYER] schwört seine Jungs nochmal ein!"
+        "Flutlicht an, der Ball rollt! Willkommen im Fußball-Tempel zur Begegnung [TEAM_1] gegen [TEAM_2].",
+        "Das ist die absolute Crème de la Crème. Wir erwarten ein packendes Duell zwischen [TEAM_1] und [TEAM_2]!",
+        "Haben Sie es sich gemütlich gemacht? Sehr gut! [TEAM_1] gegen [TEAM_2] - ein Fußball-Leckerbissen, den wir uns auf der Zunge zergehen lassen!",
+        "Ein herrlicher Fußballabend beginnt. [TEAM_1] fordert [TEAM_2] heraus. Da kribbelt es schon beim Zusehen!",
+        "Taktisch wird das heute ein echter Leckerbissen. [TEAM_1] startet von links nach rechts gegen [TEAM_2].",
+        "Die Ränge sind bis auf den letzten Platz gefüllt. Ein Fußballfest steht uns bevor, [TEAM_1] gegen [TEAM_2]!",
+        "Licht an, Film ab! [TEAM_1] gegen [TEAM_2]. Wer hier nicht zuschaut, hat den Fußball nie geliebt.",
+        "Die Gladiatoren betreten das grüne Rechteck. [TEAM_1] gegen [TEAM_2], ein absolutes Festmenü für jeden Fußballfan.",
+        "Die Akteure sind heiß wie Frittenfett. Wenn [TEAM_1] und [TEAM_2] aufeinandertreffen, brennt hier der Rasen!"
     ],
     liga_start: [
-        "Willkommen zum Ligaspiel! [TEAM_1] geht als [POS_1] in diese Partie [FORM_1]. Der Gegner [TEAM_2] steht auf [POS_2] [FORM_2].",
-        "Ein enorm wichtiges Match in dieser Liga! [TEAM_1], aktuell [POS_1], trifft auf [TEAM_2], die derzeit [POS_2] sind.",
-        "Hallo liebe Fußballfreunde! [TEAM_1] kommt [FORM_1] in diese Begegnung. Ob [TEAM_2] als [POS_2] da heute gegenhalten kann?",
-        "Die Liga biegt auf die nächste Gerade ein. [TEAM_1] als [POS_1] gegen [TEAM_2] als [POS_2] - das verspricht Spannung pur!",
-        "[TEAM_1] hat sich als [POS_1] viel vorgenommen [FORM_1]. [TEAM_2] muss als [POS_2] heute dringend punkten [FORM_2].",
-        "Herzlich Willkommen am Spieltag! [TEAM_1] ist momentan [POS_1] und geht [FORM_1] ins Spiel. Auf der anderen Seite lauert [TEAM_2] als [POS_2].",
-        "Dieses Duell hat es in sich! [TEAM_1] [FORM_1] gegen [TEAM_2] [FORM_2]. Freuen wir uns auf packende 90 Minuten!",
-        "Spitzenspiel oder Abstiegskampf? Wir werden sehen! [TEAM_1] rangiert auf [POS_1]. Die Gäste von [TEAM_2] grüßen als [POS_2]."
+        "Willkommen zum [MATCHDAY]. Spieltag! [TEAM_1] empfängt [TEAM_2]. Die Hausherren gehen als [POS_1] in diese Partie [FORM_1]. Der Gegner steht auf [POS_2] [FORM_2].",
+        "Wolff Fuss begrüßt Sie zum [MATCHDAY]. Spieltag! Ein enorm wichtiges Match in dieser Liga! [TEAM_1], aktuell [POS_1], trifft auf [TEAM_2], die derzeit [POS_2] sind.",
+        "Hallo liebe Fußballfreunde am [MATCHDAY]. Spieltag! [TEAM_1] kommt [FORM_1] in diese Begegnung. Ob [TEAM_2] als [POS_2] da heute gegenhalten kann?",
+        "Der [MATCHDAY]. Spieltag steht an! Die Liga biegt auf die nächste Gerade ein. [TEAM_1] als [POS_1] gegen [TEAM_2] als [POS_2] - das verspricht Spannung pur!",
+        "Ein herzliches Willkommen am [MATCHDAY]. Spieltag! [TEAM_1] hat sich als [POS_1] viel vorgenommen [FORM_1]. [TEAM_2] muss als [POS_2] heute dringend punkten [FORM_2].",
+        "Guten Abend allerseits zum [MATCHDAY]. Spieltag! [TEAM_1] ist momentan [POS_1] und geht [FORM_1] ins Spiel. Auf der anderen Seite lauert [TEAM_2] als [POS_2].",
+        "Es ist angerichtet am [MATCHDAY]. Spieltag! Dieses Duell hat es in sich! [TEAM_1] [FORM_1] gegen [TEAM_2] [FORM_2]. Freuen wir uns auf packende 90 Minuten!",
+        "Spitzenspiel oder Abstiegskampf? Wir werden sehen am [MATCHDAY]. Spieltag! [TEAM_1] rangiert auf [POS_1]. Die Gäste von [TEAM_2] grüßen als [POS_2].",
+        "Einen wunderschönen guten Abend zum [MATCHDAY]. Spieltag! [TEAM_1] gegen [TEAM_2]. [POS_1] gegen [POS_2]. Das ist ein absoluter Kracher!",
+        "Schnallen Sie sich an, liebe Zuschauer, es ist der [MATCHDAY]. Spieltag! [TEAM_1] empfängt als [POS_1] die Jungs von [TEAM_2], die aktuell als [POS_2] in der Tabelle stehen.",
+        "Hallo aus der Kommentatorenkabine zum [MATCHDAY]. Spieltag! Wenn [TEAM_1] als [POS_1] auf [TEAM_2] als [POS_2] trifft, dann ist Spektakel vorprogrammiert!",
+        "Was für ein herrlicher [MATCHDAY]. Spieltag! [TEAM_1] [FORM_1]. Aber Vorsicht, [TEAM_2] ist als [POS_2] immer für eine Überraschung gut [FORM_2]."
     ],
     besitz: [
         "[PLAYER] streichelt den Ball.",
@@ -169,7 +176,8 @@ function spreche(kategorie, playerObj) {
         let pos2 = getLeaguePosPhrase(spieler2.team);
         let form1 = getLeagueFormPhrase(spieler1.team);
         let form2 = getLeagueFormPhrase(spieler2.team);
-        spruch = spruch.replace(/\[POS_1\]/g, pos1).replace(/\[POS_2\]/g, pos2).replace(/\[FORM_1\]/g, form1).replace(/\[FORM_2\]/g, form2);
+        let md = leagueState ? leagueState.matchday + 1 : 1;
+        spruch = spruch.replace(/\[POS_1\]/g, pos1).replace(/\[POS_2\]/g, pos2).replace(/\[FORM_1\]/g, form1).replace(/\[FORM_2\]/g, form2).replace(/\[MATCHDAY\]/g, md);
         spruch = spruch.replace(/  +/g, ' ').replace(/ \./g, '.'); // Entfernt doppelte Leerzeichen falls Formtext leer ist
     }
     
