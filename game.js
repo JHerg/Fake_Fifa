@@ -742,19 +742,31 @@ function torGefallen(scoringTeam) {
     else { score.b++; document.getElementById("scoreBlue").innerText = score.b; createExplosion(10, HOEHE / 2, spieler2.farbe); }
     
     playSound('goal', ball.x); screenShake = 15; 
-    if (isEigentor) { spreche("eigentor", scorer); } else { spreche("tor", scorer); }
+    
+    if (isGoldenGoal) {
+        if (isEigentor) { spreche("eigentor", scorer); } else { spreche("golden_goal", scorer); }
+    } else {
+        if (isEigentor) { spreche("eigentor", scorer); } else { spreche("tor", scorer); }
+    }
     if (crowdGainNode && gameSettings.commentary) crowdGainNode.gain.value = 0.8;
 
-    if (gameSettings.replay && replayBuffer.length > 30) { isReplay = true; replayFrame = 0; torTextBis = Date.now() + 5000; } 
-    else { torTextBis = Date.now() + 2000; resetPositionen(); }
+    if (gameSettings.replay && replayBuffer.length > 30) { 
+        isReplay = true; replayFrame = 0; torTextBis = Date.now() + 5000; 
+        if(isGoldenGoal) torTextBis += 2000;
+    } else { 
+        torTextBis = Date.now() + 2000; 
+        if(!isGoldenGoal) resetPositionen(); 
+    }
 }
 
 document.getElementById("btnStart").addEventListener("click", () => { initAudio(); document.getElementById("tabelle-container").style.display = "none"; if (gameSettings.mode === "tournament") initTournament(); else if (gameSettings.mode === "league") initLeague(); else startMatch(); });
 
 function startMatch() { 
     playSound('whistle', BREITE/2); score.r = 0; score.b = 0; document.getElementById("scoreRed").innerText = "0"; document.getElementById("scoreBlue").innerText = "0"; 
-    spielZeit = 120; document.getElementById("timerDisplay").innerText = "2:00"; 
-    hasSpokenHalftime = false; hasSpokenEndgame = false; isReplay = false;
+    spielZeit = 120; 
+    let tD = document.getElementById("timerDisplay");
+    tD.innerText = "2:00"; tD.style.color = ""; tD.style.fontSize = "";
+    hasSpokenHalftime = false; hasSpokenEndgame = false; isReplay = false; isGoldenGoal = false;
     
     matchStats = { p1Shots: 0, p2Shots: 0, p1Dist: 0, p2Dist: 0, p1Poss: 0, p2Poss: 0 };
     heatmapData = []; frameCounter = 0;
