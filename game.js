@@ -11,14 +11,14 @@ function passeCanvasAn() {
 }
 window.addEventListener("resize", passeCanvasAn); passeCanvasAn();
 
-const gameSettings = { replay: true, weather: "sun", time: "day", tournament: false, commentary: true, voiceIndex: "default" };
+const gameSettings = { replay: true, weather: "sun", time: "day", mode: "free", commentary: true, voiceIndex: "default" };
 
 document.getElementById("btnSettings").addEventListener("click", () => document.getElementById("settings-panel").classList.remove("hidden"));
 document.getElementById("btnCloseSettings").addEventListener("click", () => {
     gameSettings.replay = document.getElementById("checkReplay").checked;
     gameSettings.weather = document.getElementById("selectWeather").value;
     gameSettings.time = document.getElementById("selectTime").value;
-    gameSettings.tournament = document.getElementById("checkTournament").checked;
+    gameSettings.mode = document.getElementById("selectMode").value;
     gameSettings.commentary = document.getElementById("checkCommentary").checked;
     gameSettings.voiceIndex = document.getElementById("selectVoice").value;
     document.getElementById("settings-panel").classList.add("hidden");
@@ -215,6 +215,75 @@ let score = { r: 0, b: 0 }; let spielLaeuft = false; let spielZeit = 120; let is
 // --- KADER (PES TRICK) ---
 const teamFarben = { "Rheinland Leverkusen": "#e32221", "FC Bavaria München": "#dc052d", "SC Schwaben Stuttgart": "#e32228", "SC Westfalen Dortmund": "#fde100", "Rasenclub Leipzig": "#dd013f", "SG Frankfurt": "#000000", "1899 Kraichgau": "#0066b2", "FC Ostalb Heidenheim": "#e2001a", "SV Weser Bremen": "#1d9053", "FC Breisgau": "#c0001f", "Schwaben Augsburg": "#ba3733", "Wölfe Niedersachsen": "#65b32e", "FSV Rheinhessen": "#ed1c24", "Borussia Niederrhein": "#1f1f1f", "SC Eisern Berlin": "#d4011d", "Kiezclub Hamburg": "#533527", "Hanseaten Hamburg": "#005ca9", "Domstadt Köln": "#ed1c24" };
 const teamKader = { "Rheinland Leverkusen": ["F. Wurz", "G. Chaka", "J. Frempong"], "FC Bavaria München": ["H. Caine", "J. Musiolo", "L. Zané"], "SC Schwaben Stuttgart": ["A. Nöbel", "A. Steller", "E. Milot"], "SC Westfalen Dortmund": ["J. Brondt", "N. Schlotter", "S. Girassi"], "Rasenclub Leipzig": ["X. Symons", "L. Oponda", "B. Sisko"], "SG Frankfurt": ["O. Marmosh", "H. Ekitoko", "M. Götzer"], "1899 Kraichgau": ["A. Kramarik", "O. Bumann", "A. Stoch"], "FC Ostalb Heidenheim": ["P. Wonnar", "M. Piringer", "K. Möller"], "SV Weser Bremen": ["M. Waiser", "R. Schmidt", "M. Dacksch"], "FC Breisgau": ["V. Grifa", "R. Doon", "C. Ginter"], "Schwaben Augsburg": ["P. Titz", "F. Darmen", "A. Mair"], "Wölfe Niedersachsen": ["M. Arnoldt", "J. Wint", "L. Majar"], "FSV Rheinhessen": ["J. Burkard", "N. Amari", "R. Zentnar"], "Borussia Niederrhein": ["T. Kleindinst", "A. Plia", "F. Honorot"], "SC Eisern Berlin": ["K. Vollandt", "C. Trommel", "F. Rönna"], "Kiezclub Hamburg": ["J. Irvin", "J. Eggestin", "N. Vasil"], "Hanseaten Hamburg": ["R. Glatzl", "L. Rais", "J. Maffert"], "Domstadt Köln": ["F. Keinz", "E. Martl", "T. Hobers"] };
+const teamKuerzel = { "Rheinland Leverkusen": "LEV", "FC Bavaria München": "FCB", "SC Schwaben Stuttgart": "SCS", "SC Westfalen Dortmund": "SCW", "Rasenclub Leipzig": "RCL", "SG Frankfurt": "SGF", "1899 Kraichgau": "1899", "FC Ostalb Heidenheim": "FCH", "SV Weser Bremen": "SVW", "FC Breisgau": "FRE", "Schwaben Augsburg": "AUG", "Wölfe Niedersachsen": "WÖL", "FSV Rheinhessen": "FSV", "Borussia Niederrhein": "NIE", "SC Eisern Berlin": "SCE", "Kiezclub Hamburg": "KIE", "Hanseaten Hamburg": "HAN", "Domstadt Köln": "KÖL" };
+
+function getTeamLogoUrl(team) {
+    let txt = teamKuerzel[team] || team.substring(0,3).toUpperCase();
+    let svgContent = '';
+    
+    switch(team) {
+        case "FC Bavaria München": // Konzentrische Kreise (Bayern-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#dc052d"/><circle cx="50" cy="50" r="32" fill="#fff"/><circle cx="50" cy="50" r="22" fill="#0066b2"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "SC Westfalen Dortmund": // Gelber Kreis, schwarzer Rand (BVB-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#fde100" stroke="#000" stroke-width="6"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#000" text-anchor="middle">${txt}</text>`;
+            break;
+        case "SV Weser Bremen": // Grüne Raute (Werder-Style)
+            svgContent = `<polygon points="50,5 95,50 50,95 5,50" fill="#1d9053"/><polygon points="50,15 85,50 50,85 15,50" fill="none" stroke="#fff" stroke-width="4"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Hanseaten Hamburg": // Blaue Flagge in Raute (HSV-Style)
+            svgContent = `<polygon points="50,5 95,50 50,95 5,50" fill="#005ca9"/><polygon points="50,15 85,50 50,85 15,50" fill="#fff"/><polygon points="50,22 78,50 50,78 22,50" fill="#000"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Borussia Niederrhein": // Schwarz-Weiße Raute (Gladbach-Style)
+            svgContent = `<polygon points="50,5 95,50 50,95 5,50" fill="#fff" stroke="#000" stroke-width="4"/><polygon points="50,20 80,50 50,80 20,50" fill="#1f1f1f"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Kiezclub Hamburg": // Braunes Rechteck (St. Pauli-Style)
+            svgContent = `<rect x="10" y="10" width="80" height="80" rx="10" fill="#533527" stroke="#fff" stroke-width="4"/><circle cx="50" cy="50" r="25" fill="#fff"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#533527" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Rheinland Leverkusen": // Roter Kreis, innerer Rand (Leverkusen-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#e32221" stroke="#000" stroke-width="6"/><circle cx="50" cy="50" r="33" fill="none" stroke="#fff" stroke-width="3"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "1899 Kraichgau": // Schild mit diagonaler Linie (Hoffenheim-Style)
+            svgContent = `<path d="M15,15 L85,15 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="#0066b2" stroke="#fff" stroke-width="4"/><line x1="20" y1="20" x2="80" y2="80" stroke="#fff" stroke-width="8"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff" stroke="#0066b2" stroke-width="1.5" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Wölfe Niedersachsen": // Grüner Kreis mit stilisiertem W (Wolfsburg-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#65b32e" stroke="#fff" stroke-width="6"/><path d="M25,35 L40,70 L50,50 L60,70 L75,35" fill="none" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><text x="50%" y="82%" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "SG Frankfurt": // Schwarzer Kreis, roter Rand (Frankfurt-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#000" stroke="#e32221" stroke-width="6"/><path d="M50,15 L75,50 L50,85 L25,50 Z" fill="#fff"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#000" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Domstadt Köln": // Geteilter Kreis Oben/Unten (Köln-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#fff" stroke="#ed1c24" stroke-width="6"/><path d="M5,50 A45,45 0 0,0 95,50 Z" fill="#ed1c24"/><text x="50%" y="32%" dy="0.35em" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ed1c24" text-anchor="middle">1.FC</text><text x="50%" y="72%" dy="0.35em" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "FC Breisgau": // Schild halb Schwarz/Rot, halb Weiß (Freiburg-Style)
+            svgContent = `<path d="M15,10 L85,10 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="#c0001f" stroke="#fff" stroke-width="4"/><path d="M15,10 L85,10 L15,75 Z" fill="#fff"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#000" stroke="#fff" stroke-width="1" text-anchor="middle">${txt}</text>`;
+            break;
+        case "SC Schwaben Stuttgart": // Schild mit Brustring (Stuttgart-Style)
+            svgContent = `<path d="M15,15 L85,15 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="#fff" stroke="#e32228" stroke-width="5"/><rect x="15" y="40" width="70" height="20" fill="#e32228"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Rasenclub Leipzig": // Schild mit abstrakten "Bullen" (Leipzig-Style)
+            svgContent = `<path d="M15,10 L85,10 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="#fff" stroke="#dd013f" stroke-width="5"/><polygon points="20,40 45,60 20,80" fill="#dd013f"/><polygon points="80,40 55,60 80,80" fill="#002147"/><text x="50%" y="25%" dy="0.35em" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#000" text-anchor="middle">${txt}</text>`;
+            break;
+        case "Schwaben Augsburg": // Schild mit 3 vertikalen Streifen (Augsburg-Style)
+            svgContent = `<defs><clipPath id="aug"><path d="M15,10 L85,10 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z"/></clipPath></defs><g clip-path="url(#aug)"><rect x="0" y="0" width="100" height="100" fill="#fff"/><rect x="15" y="10" width="24" height="90" fill="#ba3733"/><rect x="39" y="10" width="22" height="90" fill="#1d9053"/></g><path d="M15,10 L85,10 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="none" stroke="#ba3733" stroke-width="6"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" stroke="#000" stroke-width="1.5" text-anchor="middle">${txt}</text>`;
+            break;
+        case "FC Ostalb Heidenheim": // Vertikal geteiltes Schild (Heidenheim-Style)
+            svgContent = `<path d="M15,10 L85,10 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="#e2001a" stroke="#fff" stroke-width="4"/><path d="M50,10 L85,10 L85,55 C85,85 50,95 50,95 Z" fill="#002d5a"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        case "SC Eisern Berlin": // Rot-Gelber Kreis (Union Berlin-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#d4011d" stroke="#fff" stroke-width="4"/><circle cx="50" cy="50" r="32" fill="#ffd700" stroke="#000" stroke-width="2"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#d4011d" text-anchor="middle">${txt}</text>`;
+            break;
+        case "FSV Rheinhessen": // Roter Kreis mit großer weißer "M"-Zacke (Mainz-Style)
+            svgContent = `<circle cx="50" cy="50" r="45" fill="#ed1c24" stroke="#fff" stroke-width="5"/><path d="M25,30 L40,70 L50,50 L60,70 L75,30" fill="none" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><text x="50%" y="82%" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">${txt}</text>`;
+            break;
+        default: // Fallback Schild
+            let bg = teamFarben[team] || "#000";
+            svgContent = `<path d="M15,10 L85,10 L85,55 C85,85 50,95 50,95 C50,95 15,85 15,55 Z" fill="${bg}" stroke="#ffffff" stroke-width="4"/><text x="50%" y="50%" dy="0.35em" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">${txt}</text>`;
+    }
+    
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${svgContent}</svg>`;
+    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+}
 
 function updatePlayerUI() {
     let tL = document.getElementById("teamLeft").value; let tR = document.getElementById("teamRight").value;
@@ -226,6 +295,7 @@ function updatePlayerUI() {
     spieler1.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler1.name}&backgroundColor=transparent`;
     spieler2.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler2.name}&backgroundColor=transparent`;
     document.getElementById("scoreRed").style.borderBottomColor = spieler1.farbe; document.getElementById("scoreBlue").style.borderBottomColor = spieler2.farbe;
+    document.getElementById("logoLeft").src = getTeamLogoUrl(tL); document.getElementById("logoRight").src = getTeamLogoUrl(tR);
 }
 document.getElementById("teamLeft").onchange = updatePlayerUI; document.getElementById("teamRight").onchange = updatePlayerUI;
 document.getElementById("playerLeft").onchange = () => { spieler1.name = document.getElementById("playerLeft").value; spieler1.img.src = `https://api.dicebear.com/8.x/notionists/png?seed=${spieler1.name}&backgroundColor=transparent`; };
@@ -246,7 +316,7 @@ function aktualisiereTabelle() {
     let b = document.getElementById("leaderboardBody"); b.innerHTML = "";
     let arr = []; for (let n in t) { arr.push({name: n, stats: t[n], pts: (t[n].siege * 3) + t[n].unentschieden}); }
     arr.sort((x, y) => y.pts - x.pts);
-    arr.forEach((m, i) => { let r = document.createElement("tr"); r.innerHTML = `<td><strong>${i+1}. ${m.name}</strong></td><td>${m.stats.siege}</td><td>${m.stats.unentschieden}</td><td>${m.stats.niederlagen}</td>`; b.appendChild(r); });
+    arr.forEach((m, i) => { let logo = `<img src="${getTeamLogoUrl(m.name)}" style="width:20px; height:20px; vertical-align:middle; margin-right:8px;">`; let r = document.createElement("tr"); r.innerHTML = `<td>${logo}<strong>${i+1}. ${m.name}</strong></td><td>${m.stats.siege}</td><td>${m.stats.unentschieden}</td><td>${m.stats.niederlagen}</td>`; b.appendChild(r); });
 }
 aktualisiereTabelle();
 
@@ -283,7 +353,9 @@ function initTournament() {
 function zeigeTurnierBaum() {
     let c = document.getElementById("bracket-container"); c.innerHTML = "";
     tournamentMatches.forEach((m, i) => { 
-        let d = document.createElement("div"); d.className = "bracket-match" + (i === currentMatchIndex ? " match-active" : ""); d.innerHTML = `<small>${m.stage}</small><br><strong>${m.t1}</strong><br>vs<br><strong>${m.t2}</strong>`; c.appendChild(d); 
+        let logo1 = m.t1.includes("Sieger") ? "" : `<img src="${getTeamLogoUrl(m.t1)}" style="width:16px; height:16px; vertical-align:middle; margin-right:4px;">`;
+        let logo2 = m.t2.includes("Sieger") ? "" : `<img src="${getTeamLogoUrl(m.t2)}" style="width:16px; height:16px; vertical-align:middle; margin-right:4px;">`;
+        let d = document.createElement("div"); d.className = "bracket-match" + (i === currentMatchIndex ? " match-active" : ""); d.innerHTML = `<small>${m.stage}</small><br>${logo1}<strong>${m.t1}</strong><br>vs<br>${logo2}<strong>${m.t2}</strong>`; c.appendChild(d); 
     });
     document.getElementById("tournament-overlay").classList.remove("hidden");
 }
@@ -294,11 +366,156 @@ document.getElementById("btnNextMatch").addEventListener("click", () => {
     updatePlayerUI(); startMatch();
 });
 
+// --- LIGA MODUS ---
+let leagueState = null;
+function updateTeamNamesUI() {
+    if (!leagueState) return;
+    document.querySelectorAll(".team-select").forEach(sel => {
+        if (sel.id === "teamLeft" || sel.id === "teamRight") {
+            Array.from(sel.options).forEach(opt => {
+                let suffix = "";
+                if (opt.value === leagueState.champion) suffix += " 🏆";
+                if (leagueState.promoted && leagueState.promoted.includes(opt.value)) suffix += " (N)";
+                if (leagueState.relegated && leagueState.relegated.includes(opt.value)) suffix += " (A)";
+                if (opt.value === leagueState.redLantern) suffix += " 🏮";
+                opt.textContent = opt.value + suffix;
+            });
+        }
+    });
+}
+function loadLeagueState() { let saved = localStorage.getItem('fifaLeague'); if (saved) { leagueState = JSON.parse(saved); updateTeamNamesUI(); } }
+loadLeagueState();
+
+function initLeague() {
+    if (!leagueState) {
+        let teams = Object.keys(teamFarben);
+        leagueState = {
+            season: 1, redLantern: null, champion: null, promoted: [], relegated: [],
+            leagues: { 1: teams.slice(0, 6), 2: teams.slice(6, 12), 3: teams.slice(12, 18) },
+            stats: {}, fixtures: { 1: [], 2: [], 3: [] }, matchday: 0
+        };
+        startNewSeason();
+    }
+    leagueState.userTeam = document.getElementById("teamLeft").value;
+    zeigeLiga();
+}
+
+function startNewSeason() {
+    leagueState.stats = {};
+    [1, 2, 3].forEach(l => {
+        leagueState.leagues[l].forEach(t => { leagueState.stats[t] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }; });
+        leagueState.fixtures[l] = generateFixtures(leagueState.leagues[l]);
+    });
+    leagueState.matchday = 0;
+    localStorage.setItem('fifaLeague', JSON.stringify(leagueState));
+}
+
+function generateFixtures(teams) {
+    const matchups = [ [[0,5], [1,4], [2,3]], [[5,3], [4,2], [0,1]], [[1,5], [2,0], [3,4]], [[5,4], [0,3], [1,2]], [[2,5], [3,1], [4,0]] ];
+    let fixtures = [];
+    matchups.forEach(round => fixtures.push(round.map(m => ({ home: teams[m[0]], away: teams[m[1]] })))); // Hinrunde
+    matchups.forEach(round => fixtures.push(round.map(m => ({ home: teams[m[1]], away: teams[m[0]] })))); // Rückrunde
+    return fixtures;
+}
+
+function zeigeLiga() {
+    let uTeam = leagueState.userTeam;
+    let myLeague = leagueState.leagues[1].includes(uTeam) ? 1 : leagueState.leagues[2].includes(uTeam) ? 2 : 3;
+    document.getElementById("leagueTitle").innerText = `🏆 Saison ${leagueState.season} - Liga ${myLeague}`;
+    
+    let standings = leagueState.leagues[myLeague].map(t => ({ name: t, ...leagueState.stats[t] }));
+    standings.sort((a, b) => { if (b.pts !== a.pts) return b.pts - a.pts; return (b.gf - b.ga) - (a.gf - a.ga); });
+    
+    let html = `<table style="width:100%; color:white; border-collapse: collapse; text-align: left;">
+        <tr style="border-bottom: 1px solid #555; background:rgba(255,255,255,0.1);">
+        <th style="padding:5px;">Pl.</th><th>Team</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>`;
+    standings.forEach((s, i) => {
+        let suffix = "";
+        if (s.name === leagueState.champion) suffix += " 🏆";
+        if (leagueState.promoted && leagueState.promoted.includes(s.name)) suffix += " (N)";
+        if (leagueState.relegated && leagueState.relegated.includes(s.name)) suffix += " (A)";
+        if (s.name === leagueState.redLantern) suffix += " 🏮";
+        let logo = `<img src="${getTeamLogoUrl(s.name)}" style="width:20px; height:20px; vertical-align:middle; margin-right:8px;">`;
+        let isUser = s.name === uTeam ? 'style="font-weight:bold; color:#fde100; background:rgba(255,255,255,0.05);"' : '';
+        html += `<tr ${isUser}><td style="padding:5px;">${i+1}.</td><td>${logo}${s.name}${suffix}</td><td>${s.p}</td><td>${s.gf}:${s.ga}</td><td>${s.pts}</td></tr>`;
+    });
+    html += `</table>`;
+    document.getElementById("league-standings").innerHTML = html;
+    
+    let mdFixtures = leagueState.fixtures[myLeague][leagueState.matchday];
+    let myMatch = mdFixtures.find(m => m.home === uTeam || m.away === uTeam);
+    let myLogo1 = `<img src="${getTeamLogoUrl(myMatch.home)}" style="width:16px; height:16px; vertical-align:middle; margin-right:4px;">`;
+    let myLogo2 = `<img src="${getTeamLogoUrl(myMatch.away)}" style="width:16px; height:16px; vertical-align:middle; margin-left:4px; margin-right:4px;">`;
+    document.getElementById("leagueNextMatchText").innerHTML = `Spieltag ${leagueState.matchday + 1}:<br>${myLogo1}${myMatch.home} vs ${myLogo2}${myMatch.away}`;
+    document.getElementById("league-overlay").classList.remove("hidden");
+}
+
+document.getElementById("btnNextLeagueMatch").addEventListener("click", () => {
+    document.getElementById("league-overlay").classList.add("hidden");
+    let uTeam = leagueState.userTeam;
+    let myLeague = leagueState.leagues[1].includes(uTeam) ? 1 : leagueState.leagues[2].includes(uTeam) ? 2 : 3;
+    let myMatch = leagueState.fixtures[myLeague][leagueState.matchday].find(m => m.home === uTeam || m.away === uTeam);
+    
+    document.getElementById("teamLeft").value = uTeam;
+    document.getElementById("teamRight").value = myMatch.home === uTeam ? myMatch.away : myMatch.home;
+    updatePlayerUI(); startMatch();
+});
+
+document.getElementById("btnCloseLeague").addEventListener("click", () => {
+    document.getElementById("league-overlay").classList.add("hidden");
+    document.getElementById("tabelle-container").style.display = "block";
+});
+
+function updateLeagueMatch(t1, g1, t2, g2) {
+    let s1 = leagueState.stats[t1], s2 = leagueState.stats[t2];
+    s1.p++; s2.p++; s1.gf += g1; s1.ga += g2; s2.gf += g2; s2.ga += g1;
+    if (g1 > g2) { s1.w++; s1.pts += 3; s2.l++; } else if (g1 < g2) { s2.w++; s2.pts += 3; s1.l++; } else { s1.d++; s2.d++; s1.pts += 1; s2.pts += 1; }
+}
+
+function handleEndOfSeason() {
+    let text = `Saison ${leagueState.season} beendet!\n\n`;
+    let sorted = {};
+    [1, 2, 3].forEach(l => {
+        sorted[l] = leagueState.leagues[l].slice().sort((a, b) => {
+            let sA = leagueState.stats[a], sB = leagueState.stats[b];
+            if (sB.pts !== sA.pts) return sB.pts - sA.pts; return (sB.gf - sB.ga) - (sA.gf - sA.ga);
+        });
+    });
+    
+    leagueState.champion = sorted[1][0];
+    leagueState.relegated = [sorted[1][5], sorted[2][5]];
+    leagueState.promoted = [sorted[2][0], sorted[3][0]];
+    leagueState.redLantern = sorted[3][5];
+
+    text += `Meister: ${sorted[1][0]} 🏆\nAbsteiger Liga 1: ${sorted[1][5]}\n\nAufsteiger in Liga 1: ${sorted[2][0]}\nAbsteiger Liga 2: ${sorted[2][5]}\n\nAufsteiger in Liga 2: ${sorted[3][0]}\n`;
+    let newL1 = sorted[1].slice(0, 5); newL1.push(sorted[2][0]);
+    let newL2 = sorted[2].slice(1, 5); newL2.push(sorted[1][5]); newL2.push(sorted[3][0]);
+    let newL3 = sorted[3].slice(1, 6); newL3.push(sorted[2][5]);
+    
+    text += `Rote Laterne: ${leagueState.redLantern} 🏮\n`;
+    alert(text);
+    
+    leagueState.leagues[1] = newL1; leagueState.leagues[2] = newL2; leagueState.leagues[3] = newL3;
+    leagueState.season++; updateTeamNamesUI();
+    startNewSeason(); zeigeLiga();
+}
+
 // --- SPIEL ABLAUF ---
 function resetPositionen() { 
-    ball.x = BREITE / 2; ball.y = HOEHE / 2; ball.dx = 0; ball.dy = 0; 
-    spieler1.x = 100; spieler1.y = HOEHE / 2; spieler2.x = BREITE - 100; spieler2.y = HOEHE / 2; 
-    mouseActive = false; visualBallTrail = []; replayBuffer = []; lastTouchPlayer = null; 
+    ball.x = BREITE / 2; 
+    ball.y = HOEHE / 2; 
+    ball.dx = 0; 
+    ball.dy = 0; 
+    
+    spieler1.x = 100; 
+    spieler1.y = HOEHE / 2; 
+    spieler2.x = BREITE - 100; 
+    spieler2.y = HOEHE / 2; 
+    
+    mouseActive = false; 
+    visualBallTrail = []; 
+    replayBuffer = []; 
+    lastTouchPlayer = null; 
 }
 
 function torGefallen(scoringTeam) {
@@ -316,7 +533,7 @@ function torGefallen(scoringTeam) {
     else { torTextBis = Date.now() + 2000; resetPositionen(); }
 }
 
-document.getElementById("btnStart").addEventListener("click", () => { initAudio(); if (gameSettings.tournament) initTournament(); else startMatch(); });
+document.getElementById("btnStart").addEventListener("click", () => { initAudio(); document.getElementById("tabelle-container").style.display = "none"; if (gameSettings.mode === "tournament") initTournament(); else if (gameSettings.mode === "league") initLeague(); else startMatch(); });
 
 function startMatch() { 
     playSound('whistle', BREITE/2); score.r = 0; score.b = 0; document.getElementById("scoreRed").innerText = "0"; document.getElementById("scoreBlue").innerText = "0"; 
@@ -375,11 +592,32 @@ document.getElementById("btnCloseAnalytics").addEventListener("click", () => {
     else { let winP1 = score.r > score.b; if (winP1) { speichereErgebnis(tl, "s"); speichereErgebnis(tr, "n"); } else { speichereErgebnis(tr, "s"); speichereErgebnis(tl, "n"); } }
     aktualisiereTabelle();
 
-    if (gameSettings.tournament) {
+    if (gameSettings.mode === "tournament") {
         let winP1 = score.r > score.b;
         if (isDraw) { winP1 = Math.random() > 0.5; alert("Turnier-Regel: Das Spiel war Unentschieden. Münzwurf entscheidet für: " + (winP1 ? tl : tr)); }
-        if (winP1) { currentMatchIndex++; if (currentMatchIndex < 3) { tournamentMatches[currentMatchIndex].t1 = tl; setTimeout(zeigeTurnierBaum, 1000); } else { setTimeout(() => { alert("🏆 TURNIER GEWONNEN! 🏆"); document.getElementById("checkTournament").checked = false; gameSettings.tournament = false; }, 500); } } 
-        else { setTimeout(() => { alert("❌ AUSGESCHIEDEN!"); document.getElementById("checkTournament").checked = false; gameSettings.tournament = false; }, 500); }
+        if (winP1) { currentMatchIndex++; if (currentMatchIndex < 3) { tournamentMatches[currentMatchIndex].t1 = tl; setTimeout(zeigeTurnierBaum, 1000); } else { setTimeout(() => { alert("🏆 TURNIER GEWONNEN! 🏆"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 500); } } 
+        else { setTimeout(() => { alert("❌ AUSGESCHIEDEN!"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 500); }
+    } else if (gameSettings.mode === "league") {
+        let uTeam = document.getElementById("teamLeft").value;
+        let oppTeam = document.getElementById("teamRight").value;
+        updateLeagueMatch(uTeam, score.r, oppTeam, score.b);
+        
+        [1, 2, 3].forEach(l => {
+            let mdFixtures = leagueState.fixtures[l][leagueState.matchday];
+            mdFixtures.forEach(m => {
+                if (m.home !== uTeam && m.away !== uTeam) {
+                    let gh = Math.floor(Math.random() * 4);
+                    let ga = Math.floor(Math.random() * 4);
+                    updateLeagueMatch(m.home, gh, m.away, ga);
+                }
+            });
+        });
+        
+        leagueState.matchday++;
+        if (leagueState.matchday >= 10) { handleEndOfSeason(); } 
+        else { localStorage.setItem('fifaLeague', JSON.stringify(leagueState)); zeigeLiga(); }
+    } else {
+        document.getElementById("tabelle-container").style.display = "block";
     }
 });
 
