@@ -154,7 +154,14 @@
         <div id="league-overlay" class="overlay hidden">
             <div class="overlay-content" style="max-width: 600px; width: 90%;">
                 <h2 id="leagueTitle" class="magenta-line">🏆 Liga</h2>
-                <div id="league-standings" style="margin-bottom: 20px;"></div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 300px;">
+                        <div id="league-standings" style="margin-bottom: 20px;"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div id="league-last-results" style="margin-bottom: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px;"></div>
+                    </div>
+                </div>
                 <h3 id="leagueNextMatchText" style="color: #ccc;">Nächstes Spiel: - vs -</h3>
                 <button id="btnNextLeagueMatch" class="btn-primary">Spielen</button>
                 <button id="btnCloseLeague" style="margin-top: 10px; background: #444;">Schließen</button>

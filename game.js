@@ -49,11 +49,11 @@ function loadVoices() {
 loadVoices();
 if (speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = loadVoices; }
 
-// --- WOLFF FUSS / EPIC KOMMENTATOR WORTSCHATZ ---
+// --- FUCHS FUSS / EPIC KOMMENTATOR WORTSCHATZ ---
 const sprueche = {
     start: [
         "Ein herzliches Willkommen, liebe Fußballfreunde! [TEAM_1] empfängt heute [TEAM_2]. Das wird ein Fußball-Fest!",
-        "Hallo aus der Kommentatorenkabine! Wolff Fuss hier am Mikrofon! Ich freue mich auf die Partie zwischen [TEAM_1] und [TEAM_2].",
+        "Hallo aus der Kommentatorenkabine! Fuchs Fuss hier am Mikrofon! Ich freue mich auf die Partie zwischen [TEAM_1] und [TEAM_2].",
         "Guten Abend allerseits! Schnallen Sie sich an, [TEAM_1] trifft auf [TEAM_2]. Das hier wird ein echtes Spektakel.",
         "Der Schiedsrichter gibt die Partie frei! [TEAM_1] gegen [TEAM_2], Fußballherz, was willst du mehr?",
         "Flutlicht an, der Ball rollt! Willkommen im Fußball-Tempel zur Begegnung [TEAM_1] gegen [TEAM_2].",
@@ -64,11 +64,14 @@ const sprueche = {
         "Die Ränge sind bis auf den letzten Platz gefüllt. Ein Fußballfest steht uns bevor, [TEAM_1] gegen [TEAM_2]!",
         "Licht an, Film ab! [TEAM_1] gegen [TEAM_2]. Wer hier nicht zuschaut, hat den Fußball nie geliebt.",
         "Die Gladiatoren betreten das grüne Rechteck. [TEAM_1] gegen [TEAM_2], ein absolutes Festmenü für jeden Fußballfan.",
-        "Die Akteure sind heiß wie Frittenfett. Wenn [TEAM_1] und [TEAM_2] aufeinandertreffen, brennt hier der Rasen!"
+        "Die Akteure sind heiß wie Frittenfett. Wenn [TEAM_1] und [TEAM_2] aufeinandertreffen, brennt hier der Rasen!",
+        "Servus und Hallo! Fuchs Fuss am Apparat. Wir haben heute ein Match, das auf dem Papier absolute Spitzenklasse verspricht.",
+        "Machen Sie es sich auf der Couch bequem. Die Jungs da unten auf dem Rasen werden gleich richtig brennen!",
+        "Dieses Match hat eine gewaltige Vorgeschichte. Heute wollen es beide Teams endgültig wissen!"
     ],
     liga_start: [
         "Willkommen zum [MATCHDAY]. Spieltag! [TEAM_1] empfängt [TEAM_2]. Die Hausherren gehen als [POS_1] in diese Partie [FORM_1]. Der Gegner steht auf [POS_2] [FORM_2].",
-        "Wolff Fuss begrüßt Sie zum [MATCHDAY]. Spieltag! Ein enorm wichtiges Match in dieser Liga! [TEAM_1], aktuell [POS_1], trifft auf [TEAM_2], die derzeit [POS_2] sind.",
+        "Fuchs Fuss begrüßt Sie zum [MATCHDAY]. Spieltag! Ein enorm wichtiges Match in dieser Liga! [TEAM_1], aktuell [POS_1], trifft auf [TEAM_2], die derzeit [POS_2] sind.",
         "Hallo liebe Fußballfreunde am [MATCHDAY]. Spieltag! [TEAM_1] kommt [FORM_1] in diese Begegnung. Ob [TEAM_2] als [POS_2] da heute gegenhalten kann?",
         "Der [MATCHDAY]. Spieltag steht an! Die Liga biegt auf die nächste Gerade ein. [TEAM_1] als [POS_1] gegen [TEAM_2] als [POS_2] - das verspricht Spannung pur!",
         "Ein herzliches Willkommen am [MATCHDAY]. Spieltag! [TEAM_1] hat sich als [POS_1] viel vorgenommen [FORM_1]. [TEAM_2] muss als [POS_2] heute dringend punkten [FORM_2].",
@@ -77,8 +80,9 @@ const sprueche = {
         "Spitzenspiel oder Abstiegskampf? Wir werden sehen am [MATCHDAY]. Spieltag! [TEAM_1] rangiert auf [POS_1]. Die Gäste von [TEAM_2] grüßen als [POS_2].",
         "Einen wunderschönen guten Abend zum [MATCHDAY]. Spieltag! [TEAM_1] gegen [TEAM_2]. [POS_1] gegen [POS_2]. Das ist ein absoluter Kracher!",
         "Schnallen Sie sich an, liebe Zuschauer, es ist der [MATCHDAY]. Spieltag! [TEAM_1] empfängt als [POS_1] die Jungs von [TEAM_2], die aktuell als [POS_2] in der Tabelle stehen.",
-        "Hallo aus der Kommentatorenkabine zum [MATCHDAY]. Spieltag! Wenn [TEAM_1] als [POS_1] auf [TEAM_2] als [POS_2] trifft, dann ist Spektakel vorprogrammiert!",
-        "Was für ein herrlicher [MATCHDAY]. Spieltag! [TEAM_1] [FORM_1]. Aber Vorsicht, [TEAM_2] ist als [POS_2] immer für eine Überraschung gut [FORM_2]."
+        "Fuchs Fuss am Mikrofon zum [MATCHDAY]. Spieltag! Wenn [TEAM_1] als [POS_1] auf [TEAM_2] als [POS_2] trifft, dann ist Spektakel vorprogrammiert!",
+        "Was für ein herrlicher [MATCHDAY]. Spieltag! [TEAM_1] [FORM_1]. Aber Vorsicht, [TEAM_2] ist als [POS_2] immer für eine Überraschung gut [FORM_2].",
+        "Es geht um wichtige Punkte! [TEAM_1] will sich als [POS_1] behaupten. Für [TEAM_2] geht es als [POS_2] darum, heute den Bock umzustoßen."
     ],
     turnier_start: [
         "Willkommen zum K.O.-Spiel! Verlieren verboten, heißt die Devise. [TEAM_1] gegen [TEAM_2].",
@@ -130,7 +134,10 @@ const sprueche = {
         "[PLAYER] zieht das Tempo an! Jetzt muss es schnell gehen.",
         "Starke Übersicht von [PLAYER] in dieser Situation.",
         "[TEAM] lässt den Ball und den Gegner laufen.",
-        "[PLAYER] klebt der Ball am Fuß. Eine fantastische Technik."
+        "[PLAYER] klebt der Ball am Fuß. Eine fantastische Technik.",
+        "Hier wird das Leder mit ganz viel Liebe behandelt.",
+        "Das sieht so flüssig aus. [TEAM] hat das Spielgerät momentan voll im Griff.",
+        "Ganz feines Füßchen bei [PLAYER]. Die Gegner kommen nur hinterher."
     ],
     schuss: [
         "Was für ein Strahl von [PLAYER]!",
@@ -141,7 +148,9 @@ const sprueche = {
         "Der kommt extrem gefährlich aufs Tor!",
         "Vollspann von [PLAYER]! Da wackelt das Gebälk!",
         "Das muss es doch sein! Riesenchance für [TEAM]!",
-        "Satter Schuss von [PLAYER]! Da zuckt der Torwart nicht mal."
+        "Satter Schuss von [PLAYER]! Da zuckt der Torwart nicht mal.",
+        "Der zieht ab! Meine Güte, da wäre fast das Netz gerissen!",
+        "[PLAYER] sucht direkt den Abschluss. Gut gedacht!"
     ],
     tor: [
         "Da brat mir einer nen Storch! Was für ein Tor von [PLAYER]!",
@@ -152,7 +161,9 @@ const sprueche = {
         "Da zappelt das Ding im Netz! Klasse gemacht von [PLAYER].",
         "Der ist drin! Und wie! [PLAYER] bringt das Stadion zum Beben!",
         "Eiskalt vollstreckt von [PLAYER]! Neuer Spielstand: [SCORE_1] zu [SCORE_2]!",
-        "Wie hat er den denn gemacht?! [PLAYER], du Teufelskerl!"
+        "Wie hat er den denn gemacht?! [PLAYER], du Teufelskerl!",
+        "Einfach unwiderstehlich! Das war ein Schuss wie ein Donnerschlag!",
+        "TOOOOOR! [TEAM] feiert seinen Torschützen [PLAYER] völlig zu Recht."
     ],
     eigentor: [
         "Ach du meine Güte! Das wird ein Internet-Hit. Eigentor von [PLAYER]!",
@@ -233,9 +244,11 @@ function spreche(kategorie, playerObj) {
         let pos2 = getLeaguePosPhrase(spieler2.team);
         let form1 = getLeagueFormPhrase(spieler1.team);
         let form2 = getLeagueFormPhrase(spieler2.team);
+        let context = getLeagueContextPhrase(spieler1.team, spieler2.team);
         let md = leagueState ? leagueState.matchday + 1 : 1;
         spruch = spruch.replace(/\[POS_1\]/g, pos1).replace(/\[POS_2\]/g, pos2).replace(/\[FORM_1\]/g, form1).replace(/\[FORM_2\]/g, form2).replace(/\[MATCHDAY\]/g, md);
-        spruch = spruch.replace(/  +/g, ' ').replace(/ \./g, '.'); // Entfernt doppelte Leerzeichen falls Formtext leer ist
+        spruch = spruch.replace(/  +/g, ' ').replace(/ \./g, '.'); 
+        if (context) spruch += " " + context;
     }
     
     let utterThis = new SpeechSynthesisUtterance(spruch);
@@ -468,7 +481,7 @@ function updateTeamNamesUI() {
         }
     });
 }
-function loadLeagueState() { let saved = localStorage.getItem('fifaLeague'); if (saved) { leagueState = JSON.parse(saved); updateTeamNamesUI(); } }
+function loadLeagueState() { let saved = localStorage.getItem('fifaLeague'); if (saved) { leagueState = JSON.parse(saved); if(!leagueState.results) leagueState.results = {1:{}, 2:{}, 3:{}}; updateTeamNamesUI(); } }
 loadLeagueState();
 
 function initLeague() {
@@ -477,7 +490,7 @@ function initLeague() {
         leagueState = {
             season: 1, redLantern: null, champion: null, promoted: [], relegated: [],
             leagues: { 1: teams.slice(0, 6), 2: teams.slice(6, 12), 3: teams.slice(12, 18) },
-            stats: {}, fixtures: { 1: [], 2: [], 3: [] }, matchday: 0
+            stats: {}, fixtures: { 1: [], 2: [], 3: [] }, matchday: 0, results: { 1: {}, 2: {}, 3: {} }
         };
         startNewSeason();
     }
@@ -487,6 +500,7 @@ function initLeague() {
 
 function startNewSeason() {
     leagueState.stats = {};
+    leagueState.results = { 1: {}, 2: {}, 3: {} };
     [1, 2, 3].forEach(l => {
         leagueState.leagues[l].forEach(t => { leagueState.stats[t] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }; });
         leagueState.fixtures[l] = generateFixtures(leagueState.leagues[l]);
@@ -527,6 +541,22 @@ function zeigeLiga() {
     html += `</table>`;
     document.getElementById("league-standings").innerHTML = html;
     
+    let resultsHtml = `<h3 style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:5px;">Letzter Spieltag</h3>`;
+    if (leagueState.matchday > 0 && leagueState.results[myLeague] && leagueState.results[myLeague][leagueState.matchday - 1]) {
+        let lastMatches = leagueState.results[myLeague][leagueState.matchday - 1];
+        lastMatches.forEach(m => {
+            let isUser = (m.home === uTeam || m.away === uTeam) ? 'color:#fde100; font-weight:bold;' : 'color:#ccc;';
+            resultsHtml += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.1); font-size:14px; ${isUser}">
+                <span style="flex:1; text-align:right; padding-right:10px;">${teamKuerzel[m.home] || m.home.substring(0,3).toUpperCase()}</span>
+                <span style="background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:4px;">${m.gh} : ${m.ga}</span>
+                <span style="flex:1; text-align:left; padding-left:10px;">${teamKuerzel[m.away] || m.away.substring(0,3).toUpperCase()}</span>
+            </div>`;
+        });
+    } else {
+        resultsHtml += `<p style="font-size:12px; color:#aaa; margin-top:15px;">Noch keine Spiele gespielt.</p>`;
+    }
+    document.getElementById("league-last-results").innerHTML = resultsHtml;
+
     let mdFixtures = leagueState.fixtures[myLeague][leagueState.matchday];
     let myMatch = mdFixtures.find(m => m.home === uTeam || m.away === uTeam);
     let myLogo1 = `<img src="${getTeamLogoUrl(myMatch.home)}" style="width:16px; height:16px; vertical-align:middle; margin-right:4px;">`;
@@ -551,12 +581,18 @@ document.getElementById("btnCloseLeague").addEventListener("click", () => {
     document.getElementById("tabelle-container").style.display = "block";
 });
 
-function updateLeagueMatch(t1, g1, t2, g2) {
+function updateLeagueMatch(t1, g1, t2, g2, leagueIdx = null, matchdayIdx = null) {
     let s1 = leagueState.stats[t1], s2 = leagueState.stats[t2];
     s1.p++; s2.p++; s1.gf += g1; s1.ga += g2; s2.gf += g2; s2.ga += g1;
     if (g1 > g2) { s1.w++; s1.pts += 3; s2.l++; s1.lastRes = 'w'; s2.lastRes = 'l'; } 
     else if (g1 < g2) { s2.w++; s2.pts += 3; s1.l++; s1.lastRes = 'l'; s2.lastRes = 'w'; } 
     else { s1.d++; s2.d++; s1.pts += 1; s2.pts += 1; s1.lastRes = 'd'; s2.lastRes = 'd'; }
+
+    if (leagueIdx !== null && matchdayIdx !== null) {
+        if (!leagueState.results[leagueIdx]) leagueState.results[leagueIdx] = {};
+        if (!leagueState.results[leagueIdx][matchdayIdx]) leagueState.results[leagueIdx][matchdayIdx] = [];
+        leagueState.results[leagueIdx][matchdayIdx].push({ home: t1, away: t2, gh: g1, ga: g2 });
+    }
 }
 
 function getLeaguePosPhrase(teamName) {
@@ -578,6 +614,32 @@ function getLeagueFormPhrase(teamName) {
     if (res === 'l') { let l = ["mit ordentlich Wut im Bauch nach der Pleite zuletzt", "nach der jüngsten Niederlage auf Wiedergutmachung aus", "und muss heute nach dem Patzer zuletzt eine Reaktion zeigen", "und steht nach der letzten Nullnummer ordentlich unter Druck"]; return l[Math.floor(Math.random() * l.length)]; }
     if (res === 'd') { let d = ["nach der Punkteteilung im letzten Spiel", "und will nach dem Unentschieden heute mehr", "nach dem Remis vom letzten Spieltag", "und hofft nach der letzten Punkteteilung auf einen Dreier heute"]; return d[Math.floor(Math.random() * d.length)]; }
     return "";
+}
+
+function getLeagueContextPhrase(t1, t2) {
+    if (!leagueState) return "";
+    let myLeague = leagueState.leagues[1].includes(t1) ? 1 : leagueState.leagues[2].includes(t1) ? 2 : 3;
+    let standings = leagueState.leagues[myLeague].map(t => ({ name: t, ...leagueState.stats[t] }));
+    standings.sort((a, b) => { if (b.pts !== a.pts) return b.pts - a.pts; return (b.gf - b.ga) - (a.gf - a.ga); });
+    
+    let md = leagueState.matchday; let remainingGames = 9 - md; let remainingPts = remainingGames * 3;
+    let phrases = [];
+    
+    if (md >= 6) {
+        if (myLeague === 1) {
+            let first = standings[0]; let second = standings[1];
+            if (first.name === t1 && first.pts > second.pts + remainingPts) phrases.push("Sie sind bereits rechnerisch Meister! Ein echtes Schaulaufen für die Fans heute.");
+            else if (first.name === t1 && first.pts + 3 > second.pts + remainingPts && first.pts <= second.pts + remainingPts) phrases.push("Die Spannung ist greifbar! Mit einem Dreier heute machen sie die Meisterschaft rechnerisch klar.");
+        }
+        let last = standings[standings.length - 1]; let safePos = standings[standings.length - 2];
+        if (last.name === t1 && last.pts + remainingPts < safePos.pts) phrases.push("Traurige Gewissheit für die Hausherren: Der Abstieg steht bereits rechnerisch fest.");
+    }
+    
+    if (md >= 5 && leagueState.results && leagueState.results[myLeague] && leagueState.results[myLeague][md - 5]) {
+        let hMatch = leagueState.results[myLeague][md - 5].find(m => (m.home === t1 && m.away === t2) || (m.home === t2 && m.away === t1));
+        if (hMatch) { let tore1 = hMatch.home === t1 ? hMatch.gh : hMatch.ga; let tore2 = hMatch.away === t2 ? hMatch.ga : hMatch.gh; phrases.push(`Wir befinden uns bereits in der Rückrunde! Das Hinspiel endete ${tore1} zu ${tore2}.`); }
+    }
+    return phrases.length > 0 ? phrases.join(" ") : "";
 }
 
 function handleEndOfSeason() {
@@ -710,15 +772,17 @@ document.getElementById("btnCloseAnalytics").addEventListener("click", () => {
     } else if (gameSettings.mode === "league") {
         let uTeam = document.getElementById("teamLeft").value;
         let oppTeam = document.getElementById("teamRight").value;
-        updateLeagueMatch(uTeam, score.r, oppTeam, score.b);
+        let myLeague = leagueState.leagues[1].includes(uTeam) ? 1 : leagueState.leagues[2].includes(uTeam) ? 2 : 3;
+        updateLeagueMatch(uTeam, score.r, oppTeam, score.b, myLeague, leagueState.matchday);
         
         [1, 2, 3].forEach(l => {
             let mdFixtures = leagueState.fixtures[l][leagueState.matchday];
             mdFixtures.forEach(m => {
-                if (m.home !== uTeam && m.away !== uTeam) {
+                let isCurrentMatch = (m.home === uTeam && m.away === oppTeam) || (m.home === oppTeam && m.away === uTeam);
+                if (!isCurrentMatch) {
                     let gh = Math.floor(Math.random() * 4);
                     let ga = Math.floor(Math.random() * 4);
-                    updateLeagueMatch(m.home, gh, m.away, ga);
+                    updateLeagueMatch(m.home, gh, m.away, ga, l, leagueState.matchday);
                 }
             });
         });
