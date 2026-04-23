@@ -58,7 +58,20 @@ const sprueche = {
         "Das ist die absolute Crème de la Crème. Wir erwarten ein packendes Duell!",
         "Die Stimmung ist atemberaubend! [PLAYER] macht sich bereit, es geht los.",
         "Ein herrlicher Fußballabend beginnt. Da kribbelt es schon beim Zusehen!",
-        "Taktisch wird das heute ein Leckerbissen. [TEAM_1] startet von links nach rechts."
+        "Taktisch wird das heute ein Leckerbissen. [TEAM_1] startet von links nach rechts.",
+        "Die Ränge sind bis auf den letzten Platz gefüllt. Ein Fußballfest steht uns bevor!",
+        "Ein herzliches Hallo aus der Kommentatorenkabine! [TEAM_1] gegen [TEAM_2], das ist Musik in meinen Ohren.",
+        "Die Akteure sind heiß wie Frittenfett. [PLAYER] schwört seine Jungs nochmal ein!"
+    ],
+    liga_start: [
+        "Willkommen zum Ligaspiel! [TEAM_1] geht als [POS_1] in diese Partie [FORM_1]. Der Gegner [TEAM_2] steht auf [POS_2] [FORM_2].",
+        "Ein enorm wichtiges Match in dieser Liga! [TEAM_1], aktuell [POS_1], trifft auf [TEAM_2], die derzeit [POS_2] sind.",
+        "Hallo liebe Fußballfreunde! [TEAM_1] kommt [FORM_1] in diese Begegnung. Ob [TEAM_2] als [POS_2] da heute gegenhalten kann?",
+        "Die Liga biegt auf die nächste Gerade ein. [TEAM_1] als [POS_1] gegen [TEAM_2] als [POS_2] - das verspricht Spannung pur!",
+        "[TEAM_1] hat sich als [POS_1] viel vorgenommen [FORM_1]. [TEAM_2] muss als [POS_2] heute dringend punkten [FORM_2].",
+        "Herzlich Willkommen am Spieltag! [TEAM_1] ist momentan [POS_1] und geht [FORM_1] ins Spiel. Auf der anderen Seite lauert [TEAM_2] als [POS_2].",
+        "Dieses Duell hat es in sich! [TEAM_1] [FORM_1] gegen [TEAM_2] [FORM_2]. Freuen wir uns auf packende 90 Minuten!",
+        "Spitzenspiel oder Abstiegskampf? Wir werden sehen! [TEAM_1] rangiert auf [POS_1]. Die Gäste von [TEAM_2] grüßen als [POS_2]."
     ],
     besitz: [
         "[PLAYER] streichelt den Ball.",
@@ -150,6 +163,15 @@ function spreche(kategorie, playerObj) {
 
     if (playerObj) { spruch = spruch.replace(/\[PLAYER\]/g, playerObj.name).replace(/\[TEAM\]/g, playerObj.team); }
     spruch = spruch.replace(/\[TEAM_1\]/g, spieler1.team).replace(/\[TEAM_2\]/g, spieler2.team).replace(/\[SCORE_1\]/g, score.r).replace(/\[SCORE_2\]/g, score.b).replace(/\[LEADER\]/g, leader).replace(/\[TRAILER\]/g, trailer);
+    
+    if (kategorie === "liga_start") {
+        let pos1 = getLeaguePosPhrase(spieler1.team);
+        let pos2 = getLeaguePosPhrase(spieler2.team);
+        let form1 = getLeagueFormPhrase(spieler1.team);
+        let form2 = getLeagueFormPhrase(spieler2.team);
+        spruch = spruch.replace(/\[POS_1\]/g, pos1).replace(/\[POS_2\]/g, pos2).replace(/\[FORM_1\]/g, form1).replace(/\[FORM_2\]/g, form2);
+        spruch = spruch.replace(/  +/g, ' ').replace(/ \./g, '.'); // Entfernt doppelte Leerzeichen falls Formtext leer ist
+    }
     
     if (!["besitz"].includes(kategorie)) synth.cancel();
     
@@ -469,7 +491,30 @@ document.getElementById("btnCloseLeague").addEventListener("click", () => {
 function updateLeagueMatch(t1, g1, t2, g2) {
     let s1 = leagueState.stats[t1], s2 = leagueState.stats[t2];
     s1.p++; s2.p++; s1.gf += g1; s1.ga += g2; s2.gf += g2; s2.ga += g1;
-    if (g1 > g2) { s1.w++; s1.pts += 3; s2.l++; } else if (g1 < g2) { s2.w++; s2.pts += 3; s1.l++; } else { s1.d++; s2.d++; s1.pts += 1; s2.pts += 1; }
+    if (g1 > g2) { s1.w++; s1.pts += 3; s2.l++; s1.lastRes = 'w'; s2.lastRes = 'l'; } 
+    else if (g1 < g2) { s2.w++; s2.pts += 3; s1.l++; s1.lastRes = 'l'; s2.lastRes = 'w'; } 
+    else { s1.d++; s2.d++; s1.pts += 1; s2.pts += 1; s1.lastRes = 'd'; s2.lastRes = 'd'; }
+}
+
+function getLeaguePosPhrase(teamName) {
+    if (!leagueState) return "Tabellenmittelfeld";
+    let myLeague = leagueState.leagues[1].includes(teamName) ? 1 : leagueState.leagues[2].includes(teamName) ? 2 : 3;
+    let standings = leagueState.leagues[myLeague].map(t => ({ name: t, ...leagueState.stats[t] }));
+    standings.sort((a, b) => { if (b.pts !== a.pts) return b.pts - a.pts; return (b.gf - b.ga) - (a.gf - a.ga); });
+    let pos = standings.findIndex(s => s.name === teamName) + 1;
+    if (pos === 1) return "Spitzenreiter";
+    if (pos === 2) return "Tabellenzweiter";
+    if (pos === standings.length) return "Schlusslicht";
+    return `Tabellen-${pos}.`;
+}
+
+function getLeagueFormPhrase(teamName) {
+    if (!leagueState || leagueState.matchday === 0 || !leagueState.stats[teamName].lastRes) return "";
+    let res = leagueState.stats[teamName].lastRes;
+    if (res === 'w') { let w = ["mit viel Selbstvertrauen nach dem letzten Sieg", "mit breiter Brust durch den jüngsten Erfolg", "nach dem starken Dreier am letzten Spieltag", "und reitet aktuell auf einer echten Erfolgswelle"]; return w[Math.floor(Math.random() * w.length)]; }
+    if (res === 'l') { let l = ["mit ordentlich Wut im Bauch nach der Pleite zuletzt", "nach der jüngsten Niederlage auf Wiedergutmachung aus", "und muss heute nach dem Patzer zuletzt eine Reaktion zeigen", "und steht nach der letzten Nullnummer ordentlich unter Druck"]; return l[Math.floor(Math.random() * l.length)]; }
+    if (res === 'd') { let d = ["nach der Punkteteilung im letzten Spiel", "und will nach dem Unentschieden heute mehr", "nach dem Remis vom letzten Spieltag", "und hofft nach der letzten Punkteteilung auf einen Dreier heute"]; return d[Math.floor(Math.random() * d.length)]; }
+    return "";
 }
 
 function handleEndOfSeason() {
@@ -544,7 +589,8 @@ function startMatch() {
     heatmapData = []; frameCounter = 0;
     
     initWeather(); resetPositionen(); aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true; 
-    spreche("start", spieler1);
+    if (gameSettings.mode === "league" && leagueState) spreche("liga_start", spieler1);
+    else spreche("start", spieler1);
 }
 
 function zeigeAnalytics() {
