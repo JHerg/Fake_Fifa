@@ -214,6 +214,31 @@ const sprueche = {
         "JAAAAAAAA! Das ist die Entscheidung! [PLAYER] schießt [TEAM] mit dem Golden Goal in die nächste Runde!",
         "Wahnsinn! Da bricht der Jubelsturm los! Das Golden Goal durch [PLAYER] entscheidet die Partie!"
     ],
+    golden_goal_abschluss: [
+        "Ein Golden Goal, das in die Geschichte eingehen wird! [WINNER] feiert den Einzug in die nächste Runde, während für [LOSER] der Traum jäh endet.",
+        "Dramatischer kann ein Spiel nicht enden. Das Golden Goal von [WINNER] war der Dolchstoß für [LOSER].",
+        "So grausam kann Fußball sein. Ein einziger Moment, ein Golden Goal, und [WINNER] jubelt, [LOSER] trauert."
+    ],
+    turnier_finale_start: [
+        "Meine Damen und Herren, das große Finale! Es geht um den Titel! [TEAM_1] gegen [TEAM_2], wer holt sich den Pokal?",
+        "Willkommen zum Endspiel! Die Luft knistert, die Spannung ist greifbar. [TEAM_1] fordert [TEAM_2] zum ultimativen Duell!",
+        "Das ist es also, das Finale! Nur noch ein Sieg trennt diese beiden Teams vom Ruhm. [TEAM_1] oder [TEAM_2] - eine Mannschaft wird heute Geschichte schreiben!"
+    ],
+    turnier_weiter: [
+        "Was für eine Leistung! [TEAM] zieht in die nächste Runde ein!",
+        "Der Traum lebt weiter! [TEAM] steht in der nächsten Runde dieses Turniers.",
+        "Ein hartes Stück Arbeit, aber [TEAM] hat es geschafft und ist eine Runde weiter."
+    ],
+    turnier_aus: [
+        "Das war's! Ein bitteres Ende für [TEAM]. Sie müssen die Koffer packen.",
+        "Kopf hoch, [TEAM]! Sie haben alles gegeben, aber heute hat es nicht gereicht.",
+        "Aus und vorbei. Das Turnier-Abenteuer ist für [TEAM] beendet."
+    ],
+    turnier_sieg: [
+        "SIE HABEN ES GESCHAFFT! [TEAM] ist der Champion! Herzlichen Glückwunsch zum Turniersieg!",
+        "Der Pokal geht an [TEAM]! Eine unglaubliche Reise endet mit dem ultimativen Triumph!",
+        "Konfetti regnet nieder! [TEAM] stemmt den Pokal in die Höhe! Was für ein Moment, was für ein Turnier!"
+    ],
     ende_sieg: [
         "Abpfiff! Das war's für heute. Ein spektakuläres Spiel mit [LEADER] als verdientem Sieger!",
         "Das Spiel ist aus. Ein wirklich toller Auftritt und ein Sieg für [LEADER].",
@@ -226,12 +251,12 @@ const sprueche = {
     ]
 };
 
-function spreche(kategorie, playerObj) {
+function spreche(kategorie, playerObj, context = null) {
     if (!gameSettings.commentary || !soundEnabled) return;
     
     if (synth.speaking) {
         // Nur bei extrem wichtigen Ereignissen darf der laufende Kommentar abgebrochen werden
-        if (["tor", "eigentor", "ende_sieg", "ende_unentschieden", "golden_goal", "verlaengerung_start"].includes(kategorie)) {
+        if (["tor", "eigentor", "ende_sieg", "ende_unentschieden", "golden_goal", "verlaengerung_start", "turnier_sieg", "turnier_aus"].includes(kategorie)) {
             synth.cancel();
         } else {
             return; // Ansonsten wird der neue Satz einfach nicht gesprochen, bis wieder Stille ist
@@ -254,6 +279,11 @@ function spreche(kategorie, playerObj) {
 
     if (playerObj) { spruch = spruch.replace(/\[PLAYER\]/g, playerObj.name).replace(/\[TEAM\]/g, playerObj.team); }
     spruch = spruch.replace(/\[TEAM_1\]/g, spieler1.team).replace(/\[TEAM_2\]/g, spieler2.team).replace(/\[SCORE_1\]/g, score.r).replace(/\[SCORE_2\]/g, score.b).replace(/\[LEADER\]/g, leader).replace(/\[TRAILER\]/g, trailer);
+    
+    if (context) {
+        if (context.winner) spruch = spruch.replace(/\[WINNER\]/g, context.winner);
+        if (context.loser) spruch = spruch.replace(/\[LOSER\]/g, context.loser);
+    }
     
     if (kategorie === "liga_start") {
         let pos1 = getLeaguePosPhrase(spieler1.team);
@@ -731,8 +761,13 @@ function startMatch() {
     
     initWeather(); resetPositionen(); aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true; ballBeruehrt = false;
     if (gameSettings.mode === "league" && leagueState) spreche("liga_start", spieler1);
-    else if (gameSettings.mode === "tournament") spreche("turnier_start", spieler1);
-    else spreche("start", spieler1);
+    else if (gameSettings.mode === "tournament") {
+        if (currentMatchIndex === 2) { // Finale
+            spreche("turnier_finale_start", spieler1);
+        } else {
+            spreche("turnier_start", spieler1);
+        }
+    } else spreche("start", spieler1);
 }
 
 function zeigeAnalytics() {
@@ -781,9 +816,32 @@ document.getElementById("btnCloseAnalytics").addEventListener("click", () => {
     aktualisiereTabelle();
 
     if (gameSettings.mode === "tournament") {
-        let winP1 = score.r > score.b;
-        if (winP1) { currentMatchIndex++; if (currentMatchIndex < 3) { tournamentMatches[currentMatchIndex].t1 = tl; setTimeout(zeigeTurnierBaum, 1000); } else { setTimeout(() => { alert("🏆 TURNIER GEWONNEN! 🏆"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 500); } } 
-        else { setTimeout(() => { alert("❌ AUSGESCHIEDEN!"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 500); }
+        const winP1 = score.r > score.b;
+        const winner = winP1 ? tl : tr;
+        const loser = winP1 ? tr : tl;
+
+        if (winP1) { // Spieler 1 (Benutzer) gewinnt
+            currentMatchIndex++;
+            if (currentMatchIndex < 3) { // Sieg vor dem Finale
+                tournamentMatches[currentMatchIndex].t1 = tl;
+                if (isGoldenGoal) {
+                    spreche("golden_goal_abschluss", null, { winner: winner, loser: loser });
+                } else {
+                    spreche("turnier_weiter", { team: winner });
+                }
+                setTimeout(zeigeTurnierBaum, 4000);
+            } else { // Turniersieg
+                spreche("turnier_sieg", { team: winner });
+                setTimeout(() => { alert("🏆 TURNIER GEWONNEN! 🏆"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 6000);
+            }
+        } else { // Spieler 1 verliert
+            if (isGoldenGoal) {
+                spreche("golden_goal_abschluss", null, { winner: winner, loser: loser });
+            } else {
+                spreche("turnier_aus", { team: loser });
+            }
+            setTimeout(() => { alert("❌ AUSGESCHIEDEN!"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 6000);
+        }
     } else if (gameSettings.mode === "league") {
         let uTeam = document.getElementById("teamLeft").value;
         let oppTeam = document.getElementById("teamRight").value;
