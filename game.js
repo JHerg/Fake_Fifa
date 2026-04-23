@@ -80,6 +80,46 @@ const sprueche = {
         "Hallo aus der Kommentatorenkabine zum [MATCHDAY]. Spieltag! Wenn [TEAM_1] als [POS_1] auf [TEAM_2] als [POS_2] trifft, dann ist Spektakel vorprogrammiert!",
         "Was für ein herrlicher [MATCHDAY]. Spieltag! [TEAM_1] [FORM_1]. Aber Vorsicht, [TEAM_2] ist als [POS_2] immer für eine Überraschung gut [FORM_2]."
     ],
+    turnier_start: [
+        "Willkommen zum K.O.-Spiel! Verlieren verboten, heißt die Devise. [TEAM_1] gegen [TEAM_2].",
+        "Es geht um alles oder nichts in diesem Turnier! [TEAM_1] gegen [TEAM_2] - wer hier patzt, fliegt!",
+        "Do or Die! Das ist die Magie des Turniermodus. [TEAM_1] und [TEAM_2] machen sich bereit für einen epischen Fight.",
+        "Turnierfußball pur! Keine Ausreden, keine zweite Chance. [TEAM_1] trifft auf [TEAM_2]!",
+        "Ein K.O.-Duell par excellence! [TEAM_1] gegen [TEAM_2]. Schnallen Sie sich an, es wird dramatisch.",
+        "Der Verlierer fährt nach Hause, der Sieger kommt weiter. Das ist der Stoff, aus dem Legenden sind. [TEAM_1] gegen [TEAM_2]!"
+    ],
+    wetter_sun: [
+        "Kaiserwetter im Stadion! Die Sonne lacht, perfekte Bedingungen für ein Fußballfest.",
+        "Strahlender Sonnenschein! Bei diesem herrlichen Wetter haben die Jungs gar keine andere Wahl, als Zauberfußball zu bieten.",
+        "Die Sonne brennt auf den Platz, optimales Fußballwetter heute.",
+        "Ein blauer Himmel über dem Stadion! Besser kann das Wetter für ein Fußballspiel gar nicht sein.",
+        "Kein Wölkchen am Himmel! Die Fans genießen die Sonne, hoffen wir auf ein ebenso strahlendes Spiel.",
+        "Sonnenschein pur! Wer bei diesem Wetter nicht motiviert ist, ist im falschen Beruf."
+    ],
+    wetter_night: [
+        "Das Flutlicht brennt, die Atmosphäre knistert! Ein perfekter Fußballabend.",
+        "Flutlichtspiele haben immer ihre eigene Magie. Die Bedingungen heute Abend sind sensationell.",
+        "Ein lauer Abend, helles Flutlicht und zwei Top-Teams. Was will man mehr?",
+        "Unter Flutlicht glänzt der Rasen doch am schönsten. Ein Abendspiel, wie es im Buche steht!",
+        "Die Scheinwerfer tauchen den Platz in ein magisches Licht. Flutlichtspiele sind einfach die besten!",
+        "Es ist angerichtet am heutigen Abend! Das Flutlicht ist an, die Bühne ist frei für unsere Protagonisten."
+    ],
+    wetter_rain: [
+        "Es schüttet wie aus Eimern! Fritz-Walter-Wetter, liebe Zuschauer. Das gibt heute ordentlich Rutschpartien.",
+        "Der Rasen ist nass und seifig. Das wird ein Fest für jeden, der gerne mal aus der Distanz abzieht!",
+        "Eine wahre Wasserschlacht steht uns bevor. Der Ball wird verdammt schnell auf diesem feuchten Geläuf.",
+        "Regen ohne Ende! Das Geläuf ist tief, da ist Kampfgeist gefragt.",
+        "Die reinste Rutschpartie heute! Die Bedingungen sind schwierig, aber für beide gleich.",
+        "Wer bei diesem Sauwetter gewinnt, hat es sich wirklich verdient. Der Regen peitscht auf den Rasen!"
+    ],
+    wetter_snow: [
+        "Väterchen Frost hat zugeschlagen! Das Spielfeld ist weiß, der Ball rollt schwer. Was für eine Schneeschlacht!",
+        "Eisige Temperaturen und Schnee auf dem Rasen. Das wird heute ein Spiel für die echten Kämpfernaturen!",
+        "Eine geschlossene Schneedecke! Das wird technisch anspruchsvoll, aber umso rutschiger in den Zweikämpfen.",
+        "Willkommen im Winterwunderland! Orangefarbener Ball, dicke Handschuhe - heute wird es frostig.",
+        "Der Winter ist eingebrochen! Es schneit ununterbrochen, das ist nichts für Schönwetterfußballer.",
+        "Schneegestöber über dem Stadion! Die Jungs müssen sich warm laufen, sonst frieren hier gleich alle fest."
+    ],
     besitz: [
         "[PLAYER] streichelt den Ball.",
         "[PLAYER] sucht die Lücke in der Abwehr. Da hat er das Auge für den Raum.",
@@ -161,10 +201,27 @@ const sprueche = {
 
 function spreche(kategorie, playerObj) {
     if (!gameSettings.commentary || !soundEnabled) return;
-    if (kategorie === "besitz" && synth.speaking) return;
+    
+    if (synth.speaking) {
+        // Nur bei extrem wichtigen Ereignissen darf der laufende Kommentar abgebrochen werden
+        if (["tor", "eigentor", "ende_sieg", "ende_unentschieden"].includes(kategorie)) {
+            synth.cancel();
+        } else {
+            return; // Ansonsten wird der neue Satz einfach nicht gesprochen, bis wieder Stille ist
+        }
+    }
 
     let list = sprueche[kategorie]; if (!list) return;
     let spruch = list[Math.floor(Math.random() * list.length)];
+    
+    if (["start", "liga_start", "turnier_start"].includes(kategorie)) {
+        if (Math.random() > 0.2) { // Zu 80% Wetter/Tageszeit anhängen
+            let wKey = gameSettings.weather === "sun" && gameSettings.time === "night" ? "wetter_night" : "wetter_" + gameSettings.weather;
+            let wList = sprueche[wKey];
+            if (wList) spruch += " " + wList[Math.floor(Math.random() * wList.length)];
+        }
+    }
+
     let leader = score.r > score.b ? spieler1.team : (score.b > score.r ? spieler2.team : "niemand");
     let trailer = score.r < score.b ? spieler1.team : (score.b < score.r ? spieler2.team : "niemand");
 
@@ -180,8 +237,6 @@ function spreche(kategorie, playerObj) {
         spruch = spruch.replace(/\[POS_1\]/g, pos1).replace(/\[POS_2\]/g, pos2).replace(/\[FORM_1\]/g, form1).replace(/\[FORM_2\]/g, form2).replace(/\[MATCHDAY\]/g, md);
         spruch = spruch.replace(/  +/g, ' ').replace(/ \./g, '.'); // Entfernt doppelte Leerzeichen falls Formtext leer ist
     }
-    
-    if (!["besitz"].includes(kategorie)) synth.cancel();
     
     let utterThis = new SpeechSynthesisUtterance(spruch);
     utterThis.lang = 'de-DE'; utterThis.rate = 1.15;
@@ -240,7 +295,7 @@ let spieler1 = { x: 100, y: 300, radius: 25, img: new Image(), name: "", team: "
 let spieler2 = { x: 900, y: 300, radius: 25, img: new Image(), name: "", team: "", baseSpeed: 7 };
 spieler1.img.crossOrigin = "anonymous"; spieler2.img.crossOrigin = "anonymous";
 
-let score = { r: 0, b: 0 }; let spielLaeuft = false; let spielZeit = 120; let isReplay = false; let replayBuffer = [];
+let score = { r: 0, b: 0 }; let spielLaeuft = false; let ballBeruehrt = false; let spielZeit = 120; let isReplay = false; let replayBuffer = [];
 
 // --- KADER (PES TRICK) ---
 const teamFarben = { "Rheinland Leverkusen": "#e32221", "FC Bavaria München": "#dc052d", "SC Schwaben Stuttgart": "#e32228", "SC Westfalen Dortmund": "#fde100", "Rasenclub Leipzig": "#dd013f", "SG Frankfurt": "#000000", "1899 Kraichgau": "#0066b2", "FC Ostalb Heidenheim": "#e2001a", "SV Weser Bremen": "#1d9053", "FC Breisgau": "#c0001f", "Schwaben Augsburg": "#ba3733", "Wölfe Niedersachsen": "#65b32e", "FSV Rheinhessen": "#ed1c24", "Borussia Niederrhein": "#1f1f1f", "SC Eisern Berlin": "#d4011d", "Kiezclub Hamburg": "#533527", "Hanseaten Hamburg": "#005ca9", "Domstadt Köln": "#ed1c24" };
@@ -596,7 +651,7 @@ function startMatch() {
     matchStats = { p1Shots: 0, p2Shots: 0, p1Dist: 0, p2Dist: 0, p1Poss: 0, p2Poss: 0 };
     heatmapData = []; frameCounter = 0;
     
-    initWeather(); resetPositionen(); aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true; 
+    initWeather(); resetPositionen(); aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true; ballBeruehrt = false;
     if (gameSettings.mode === "league" && leagueState) spreche("liga_start", spieler1);
     else if (gameSettings.mode === "tournament") spreche("turnier_start", spieler1);
     else spreche("start", spieler1);
@@ -704,7 +759,9 @@ function update() {
         return; 
     }
     
-    spielZeit -= dt; if (spielZeit <= 0) { spielZeit = 0; spielBeenden(); }
+    if (lastTouchPlayer !== null) ballBeruehrt = true;
+    if (ballBeruehrt) spielZeit -= dt; 
+    if (spielZeit <= 0) { spielZeit = 0; spielBeenden(); }
     document.getElementById("timerDisplay").innerText = Math.floor(spielZeit / 60) + ":" + (Math.floor(spielZeit % 60) < 10 ? "0" : "") + Math.floor(spielZeit % 60);
     
     frameCounter++;
