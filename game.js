@@ -598,6 +598,7 @@ function startMatch() {
     
     initWeather(); resetPositionen(); aiLastX = spieler2.x; aiLastY = spieler2.y; aiStuckFrames = 0; letzterFrame = Date.now(); spielLaeuft = true; 
     if (gameSettings.mode === "league" && leagueState) spreche("liga_start", spieler1);
+    else if (gameSettings.mode === "tournament") spreche("turnier_start", spieler1);
     else spreche("start", spieler1);
 }
 
