@@ -198,6 +198,22 @@ const sprueche = {
         "Noch 20 Sekunden auf der Uhr! Das riecht nach einem Drama! Wer traut sich noch was?",
         "Herzschlagfinale! Niemand will hier den entscheidenden Fehler machen."
     ],
+    verlaengerung_start: [
+        "Die reguläre Spielzeit ist abgelaufen! Es steht unentschieden. Wir gehen ins Golden Goal!",
+        "Unentschieden nach regulärer Spielzeit! Jetzt gibt es Golden Goal! Wer jetzt trifft, ist sofort der Sieger!",
+        "Drama pur, liebe Zuschauer! Wir gehen in die Verlängerung. Golden Goal entscheidet!",
+        "Das gibt's doch gar nicht! Keine Entscheidung in der regulären Spielzeit. Golden Goal Modus aktiviert!",
+        "Die Spannung ist förmlich greifbar! Golden Goal! Ein einziger Fehler, ein genialer Moment entscheidet jetzt alles!",
+        "Nichts für schwache Nerven! Wir starten in die Golden Goal Verlängerung. Der nächste Treffer beendet die Partie!"
+    ],
+    golden_goal: [
+        "GOLDEN GOAL! GOLDEN GOAL! [PLAYER] macht das goldene Tor für [TEAM]! Das Spiel ist aus!",
+        "Unfassbar! [PLAYER] erlöst [TEAM] mit dem Golden Goal! Was für ein Finale!",
+        "Da ist es! Das Golden Goal! [PLAYER] trifft und beendet dieses epische Match!",
+        "Das Spiel ist vorbei! Ein magischer Moment von [PLAYER]! Golden Goal für [TEAM]!",
+        "JAAAAAAAA! Das ist die Entscheidung! [PLAYER] schießt [TEAM] mit dem Golden Goal in die nächste Runde!",
+        "Wahnsinn! Da bricht der Jubelsturm los! Das Golden Goal durch [PLAYER] entscheidet die Partie!"
+    ],
     ende_sieg: [
         "Abpfiff! Das war's für heute. Ein spektakuläres Spiel mit [LEADER] als verdientem Sieger!",
         "Das Spiel ist aus. Ein wirklich toller Auftritt und ein Sieg für [LEADER].",
@@ -215,7 +231,7 @@ function spreche(kategorie, playerObj) {
     
     if (synth.speaking) {
         // Nur bei extrem wichtigen Ereignissen darf der laufende Kommentar abgebrochen werden
-        if (["tor", "eigentor", "ende_sieg", "ende_unentschieden"].includes(kategorie)) {
+        if (["tor", "eigentor", "ende_sieg", "ende_unentschieden", "golden_goal", "verlaengerung_start"].includes(kategorie)) {
             synth.cancel();
         } else {
             return; // Ansonsten wird der neue Satz einfach nicht gesprochen, bis wieder Stille ist
@@ -308,7 +324,7 @@ let spieler1 = { x: 100, y: 300, radius: 25, img: new Image(), name: "", team: "
 let spieler2 = { x: 900, y: 300, radius: 25, img: new Image(), name: "", team: "", baseSpeed: 7 };
 spieler1.img.crossOrigin = "anonymous"; spieler2.img.crossOrigin = "anonymous";
 
-let score = { r: 0, b: 0 }; let spielLaeuft = false; let ballBeruehrt = false; let spielZeit = 120; let isReplay = false; let replayBuffer = [];
+let score = { r: 0, b: 0 }; let spielLaeuft = false; let ballBeruehrt = false; let spielZeit = 120; let isReplay = false; let replayBuffer = []; let isGoldenGoal = false;
 
 // --- KADER (PES TRICK) ---
 const teamFarben = { "Rheinland Leverkusen": "#e32221", "FC Bavaria München": "#dc052d", "SC Schwaben Stuttgart": "#e32228", "SC Westfalen Dortmund": "#fde100", "Rasenclub Leipzig": "#dd013f", "SG Frankfurt": "#000000", "1899 Kraichgau": "#0066b2", "FC Ostalb Heidenheim": "#e2001a", "SV Weser Bremen": "#1d9053", "FC Breisgau": "#c0001f", "Schwaben Augsburg": "#ba3733", "Wölfe Niedersachsen": "#65b32e", "FSV Rheinhessen": "#ed1c24", "Borussia Niederrhein": "#1f1f1f", "SC Eisern Berlin": "#d4011d", "Kiezclub Hamburg": "#533527", "Hanseaten Hamburg": "#005ca9", "Domstadt Köln": "#ed1c24" };
@@ -766,7 +782,6 @@ document.getElementById("btnCloseAnalytics").addEventListener("click", () => {
 
     if (gameSettings.mode === "tournament") {
         let winP1 = score.r > score.b;
-        if (isDraw) { winP1 = Math.random() > 0.5; alert("Turnier-Regel: Das Spiel war Unentschieden. Münzwurf entscheidet für: " + (winP1 ? tl : tr)); }
         if (winP1) { currentMatchIndex++; if (currentMatchIndex < 3) { tournamentMatches[currentMatchIndex].t1 = tl; setTimeout(zeigeTurnierBaum, 1000); } else { setTimeout(() => { alert("🏆 TURNIER GEWONNEN! 🏆"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 500); } } 
         else { setTimeout(() => { alert("❌ AUSGESCHIEDEN!"); document.getElementById("selectMode").value = "free"; gameSettings.mode = "free"; document.getElementById("tabelle-container").style.display = "block"; }, 500); }
     } else if (gameSettings.mode === "league") {
@@ -798,7 +813,9 @@ document.getElementById("btnCloseAnalytics").addEventListener("click", () => {
 function spielBeenden() {
     spielLaeuft = false; playSound('whistle', BREITE/2); 
     let isDraw = score.r === score.b;
-    if (isDraw) { spreche("ende_unentschieden", null); } else { spreche("ende_sieg", score.r > score.b ? spieler1 : spieler2); }
+    if (!isGoldenGoal) {
+        if (isDraw) { spreche("ende_unentschieden", null); } else { spreche("ende_sieg", score.r > score.b ? spieler1 : spieler2); }
+    }
     setTimeout(zeigeAnalytics, 3000); 
 }
 
@@ -818,15 +835,38 @@ function update() {
     if (isReplay) { 
         if (crowdGainNode) crowdGainNode.gain.value *= 0.95;
         replayFrame += 0.5; 
-        if (replayFrame >= replayBuffer.length) { isReplay = false; resetPositionen(); } 
+        if (replayFrame >= replayBuffer.length) { 
+            isReplay = false; 
+            if (isGoldenGoal && score.r !== score.b) {
+                spielBeenden();
+            } else {
+                resetPositionen(); 
+            }
+        } 
         else { let s = replayBuffer[Math.floor(replayFrame)]; ball.x = s.bx; ball.y = s.by; spieler1.x = s.p1x; spieler1.y = s.p1y; spieler2.x = s.p2x; spieler2.y = s.p2y; } 
         return; 
+    } else if (isGoldenGoal && score.r !== score.b && Date.now() > torTextBis) {
+        spielBeenden();
+        return;
     }
     
     if (lastTouchPlayer !== null) ballBeruehrt = true;
-    if (ballBeruehrt) spielZeit -= dt; 
-    if (spielZeit <= 0) { spielZeit = 0; spielBeenden(); }
-    document.getElementById("timerDisplay").innerText = Math.floor(spielZeit / 60) + ":" + (Math.floor(spielZeit % 60) < 10 ? "0" : "") + Math.floor(spielZeit % 60);
+    if (ballBeruehrt && !isGoldenGoal) spielZeit -= dt; 
+    if (spielZeit <= 0 && !isGoldenGoal) { 
+        spielZeit = 0; 
+        if (gameSettings.mode === "tournament" && score.r === score.b) {
+            isGoldenGoal = true;
+            spreche("verlaengerung_start", null);
+            playSound('whistle', BREITE/2);
+            let tD = document.getElementById("timerDisplay");
+            tD.innerText = "Golden Goal"; tD.style.color = "gold"; tD.style.fontSize = "16px";
+        } else {
+            spielBeenden(); 
+        }
+    }
+    if (!isGoldenGoal) {
+        document.getElementById("timerDisplay").innerText = Math.floor(spielZeit / 60) + ":" + (Math.floor(spielZeit % 60) < 10 ? "0" : "") + Math.floor(spielZeit % 60);
+    }
     
     frameCounter++;
     if (frameCounter % 10 === 0) heatmapData.push({x: ball.x, y: ball.y});
@@ -1024,7 +1064,7 @@ function zeichneAlles() {
 
     if (isReplay) { ctx.fillStyle = "gold"; ctx.font = "bold 40px Arial"; ctx.textAlign = "center"; ctx.fillText("🎥 REPLAY", BREITE / 2, 50); }
     if (Date.now() < torTextBis && !isReplay) { 
-        let t = "TOOOOR!"; ctx.fillStyle = "gold"; ctx.font = "bold 80px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        let t = isGoldenGoal ? "GOLDEN GOAL!" : "TOOOOR!"; ctx.fillStyle = "gold"; ctx.font = "bold 80px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(t, BREITE / 2, HOEHE / 2); ctx.strokeStyle = "black"; ctx.lineWidth = 4; ctx.strokeText(t, BREITE / 2, HOEHE / 2); 
     }
 }
